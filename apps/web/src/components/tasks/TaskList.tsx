@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTasksStore } from '@/stores/tasks';
+import { useProjectsStore } from '@/stores/projects';
 import { TaskItem } from './TaskItem';
 import { QuickAdd } from './QuickAdd';
 import { Loader2 } from 'lucide-react';
@@ -29,6 +30,7 @@ export function TaskList() {
     fetchOverdue,
     fetchTasks,
   } = useTasksStore();
+  const { projects } = useProjectsStore();
 
   useEffect(() => {
     if (currentView === 'today') {
@@ -37,7 +39,28 @@ export function TaskList() {
     } else if (currentView === 'overdue') {
       fetchOverdue();
     } else if (currentView === 'project' && currentProjectId) {
-      fetchTasks({ projectId: currentProjectId });
+      fetchTasks({ projectId: currentProjectId, includeCompleted: 'false' });
+    } else if (currentView === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const start = new Date(tomorrow);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(tomorrow);
+      end.setHours(23, 59, 59, 999);
+      fetchTasks({
+        dueAfter: start.toISOString(),
+        dueBefore: end.toISOString(),
+      });
+    } else if (currentView === 'week') {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setDate(end.getDate() + 7);
+      end.setHours(23, 59, 59, 999);
+      fetchTasks({
+        dueAfter: start.toISOString(),
+        dueBefore: end.toISOString(),
+      });
     } else {
       fetchTasks();
     }
@@ -50,7 +73,11 @@ export function TaskList() {
       ? overdueTasks
       : tasks;
 
-  const title = viewTitles[currentView] || 'Задачи';
+  let title = viewTitles[currentView] || 'Задачи';
+  if (currentView === 'project' && currentProjectId) {
+    const project = projects.find((p) => p.id === currentProjectId);
+    if (project) title = project.name;
+  }
 
   if (currentView === 'habits' || currentView === 'goals' || currentView === 'focus') {
     return (

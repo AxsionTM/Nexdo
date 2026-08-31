@@ -8,7 +8,7 @@ const router = Router();
 
 const createTaskSchema = z.object({
   title: z.string().min(1, 'Название обязательно'),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH']).optional(),
   dueDate: z.string().datetime().optional().nullable(),
   startDate: z.string().datetime().optional().nullable(),
@@ -26,6 +26,11 @@ const updateTaskSchema = createTaskSchema.partial().extend({
   status: z.enum(['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
   sortOrder: z.number().optional(),
   isArchived: z.boolean().optional(),
+});
+
+const checklistItemSchema = z.object({
+  title: z.string().min(1),
+  isCompleted: z.boolean().optional(),
 });
 
 router.get('/', async (req: AuthRequest, res, next) => {
@@ -86,6 +91,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
         },
         attachments: true,
         reminders: true,
+        project: { select: { id: true, name: true, color: true } },
         _count: { select: { children: true } },
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
@@ -110,6 +116,7 @@ router.get('/today', async (req: AuthRequest, res, next) => {
         isDeleted: false,
         isArchived: false,
         status: { not: 'COMPLETED' },
+        parentId: null,
         OR: [
           { dueDate: { gte: start, lte: end } },
           { startDate: { gte: start, lte: end } },
@@ -117,8 +124,13 @@ router.get('/today', async (req: AuthRequest, res, next) => {
       },
       include: {
         tags: { include: { tag: true } },
-        checklist: true,
+        checklist: { orderBy: { sortOrder: 'asc' } },
+        children: {
+          where: { isDeleted: false },
+          orderBy: { sortOrder: 'asc' },
+        },
         project: { select: { id: true, name: true, color: true } },
+        _count: { select: { children: true } },
       },
       orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
     });
@@ -140,11 +152,14 @@ router.get('/overdue', async (req: AuthRequest, res, next) => {
         isDeleted: false,
         isArchived: false,
         status: { not: 'COMPLETED' },
+        parentId: null,
         dueDate: { lt: now },
       },
       include: {
         tags: { include: { tag: true } },
+        checklist: true,
         project: { select: { id: true, name: true, color: true } },
+        _count: { select: { children: true } },
       },
       orderBy: { dueDate: 'asc' },
     });
@@ -169,10 +184,14 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
         children: {
           where: { isDeleted: false },
           orderBy: { sortOrder: 'asc' },
+          include: {
+            tags: { include: { tag: true } },
+            checklist: true,
+          },
         },
         attachments: true,
         reminders: true,
-        project: true,
+        project: { select: { id: true, name: true, color: true } },
         section: true,
       },
     });
@@ -204,9 +223,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
         isAllDay: data.isAllDay ?? true,
         creatorId: req.userId!,
         tags: data.tagIds
-          ? {
-              create: data.tagIds.map((tagId) => ({ tagId })),
-            }
+          ? { create: data.tagIds.map((tagId) => ({ tagId })) }
           : undefined,
         checklist: data.checklist
           ? {
@@ -221,6 +238,9 @@ router.post('/', async (req: AuthRequest, res, next) => {
       include: {
         tags: { include: { tag: true } },
         checklist: true,
+        children: true,
+        project: { select: { id: true, name: true, color: true } },
+        _count: { select: { children: true } },
       },
     });
 
@@ -248,6 +268,7 @@ router.patch('/:id', async (req: AuthRequest, res, next) => {
     }
 
     const updateData: any = { ...data };
+
     if (data.dueDate !== undefined) {
       updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
     }
@@ -261,16 +282,31 @@ router.patch('/:id', async (req: AuthRequest, res, next) => {
       updateData.completedAt = null;
     }
 
+    const tagIds = data.tagIds;
     delete updateData.tagIds;
     delete updateData.checklist;
+
+    if (tagIds !== undefined) {
+      await prisma.taskTag.deleteMany({ where: { taskId: req.params.id } });
+      if (tagIds.length > 0) {
+        await prisma.taskTag.createMany({
+          data: tagIds.map((tagId) => ({ taskId: req.params.id, tagId })),
+        });
+      }
+    }
 
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: updateData,
       include: {
         tags: { include: { tag: true } },
-        checklist: true,
-        children: true,
+        checklist: { orderBy: { sortOrder: 'asc' } },
+        children: {
+          where: { isDeleted: false },
+          orderBy: { sortOrder: 'asc' },
+        },
+        project: { select: { id: true, name: true, color: true } },
+        _count: { select: { children: true } },
       },
     });
 
@@ -297,10 +333,7 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
 
     await prisma.task.update({
       where: { id: req.params.id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-      },
+      data: { isDeleted: true, deletedAt: new Date() },
     });
 
     const io = req.app.get('io');
@@ -316,15 +349,27 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
 
 router.post('/:id/complete', async (req: AuthRequest, res, next) => {
   try {
+    const existing = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+    });
+
+    if (!existing) {
+      throw new AppError(404, 'Задача не найдена');
+    }
+
+    const newStatus = existing.status === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+
     const task = await prisma.task.update({
       where: { id: req.params.id },
       data: {
-        status: 'COMPLETED',
-        completedAt: new Date(),
+        status: newStatus,
+        completedAt: newStatus === 'COMPLETED' ? new Date() : null,
       },
       include: {
         tags: { include: { tag: true } },
         checklist: true,
+        children: true,
+        project: { select: { id: true, name: true, color: true } },
       },
     });
 
@@ -334,6 +379,85 @@ router.post('/:id/complete', async (req: AuthRequest, res, next) => {
     }
 
     res.json({ task });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Checklist endpoints
+router.post('/:id/checklist', async (req: AuthRequest, res, next) => {
+  try {
+    const data = checklistItemSchema.parse(req.body);
+
+    const task = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+    });
+
+    if (!task) {
+      throw new AppError(404, 'Задача не найдена');
+    }
+
+    const maxOrder = await prisma.checklistItem.aggregate({
+      where: { taskId: req.params.id },
+      _max: { sortOrder: true },
+    });
+
+    const item = await prisma.checklistItem.create({
+      data: {
+        taskId: req.params.id,
+        title: data.title,
+        isCompleted: data.isCompleted || false,
+        sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
+      },
+    });
+
+    res.status(201).json({ item });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/:id/checklist/:itemId', async (req: AuthRequest, res, next) => {
+  try {
+    const data = z
+      .object({
+        title: z.string().min(1).optional(),
+        isCompleted: z.boolean().optional(),
+        sortOrder: z.number().optional(),
+      })
+      .parse(req.body);
+
+    const task = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+    });
+
+    if (!task) {
+      throw new AppError(404, 'Задача не найдена');
+    }
+
+    const item = await prisma.checklistItem.update({
+      where: { id: req.params.itemId },
+      data,
+    });
+
+    res.json({ item });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/:id/checklist/:itemId', async (req: AuthRequest, res, next) => {
+  try {
+    const task = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+    });
+
+    if (!task) {
+      throw new AppError(404, 'Задача не найдена');
+    }
+
+    await prisma.checklistItem.delete({ where: { id: req.params.itemId } });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

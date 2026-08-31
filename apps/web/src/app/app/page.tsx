@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TaskList } from '@/components/tasks/TaskList';
+import { TaskDetail } from '@/components/tasks/TaskDetail';
 import { Loader2 } from 'lucide-react';
 
 export default function AppPage() {
@@ -35,6 +36,7 @@ export default function AppPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <TaskList />
       </main>
+      <TaskDetail />
     </div>
   );
 }

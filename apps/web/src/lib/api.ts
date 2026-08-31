@@ -19,10 +19,7 @@ class ApiClient {
     return this.token;
   }
 
-  private async request<T>(
-    path: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -46,7 +43,6 @@ class ApiClient {
     return res.json();
   }
 
-  // Auth
   register(data: { email: string; password: string; name?: string }) {
     return this.request<{ user: any; token: string; inboxId: string }>('/auth/register', {
       method: 'POST',
@@ -65,7 +61,6 @@ class ApiClient {
     return this.request<{ user: any }>('/auth/me');
   }
 
-  // Tasks
   getTasks(params?: Record<string, string>) {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return this.request<{ tasks: any[] }>(`/tasks${query}`);
@@ -109,7 +104,26 @@ class ApiClient {
     });
   }
 
-  // Projects
+  addChecklistItem(taskId: string, data: { title: string; isCompleted?: boolean }) {
+    return this.request<{ item: any }>(`/tasks/${taskId}/checklist`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  updateChecklistItem(taskId: string, itemId: string, data: any) {
+    return this.request<{ item: any }>(`/tasks/${taskId}/checklist/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteChecklistItem(taskId: string, itemId: string) {
+    return this.request<{ success: boolean }>(`/tasks/${taskId}/checklist/${itemId}`, {
+      method: 'DELETE',
+    });
+  }
+
   getProjects() {
     return this.request<{ projects: any[] }>('/projects');
   }
@@ -121,7 +135,6 @@ class ApiClient {
     });
   }
 
-  // Tags
   getTags() {
     return this.request<{ tags: any[] }>('/tags');
   }
@@ -133,7 +146,6 @@ class ApiClient {
     });
   }
 
-  // Habits
   getHabits() {
     return this.request<{ habits: any[] }>('/habits');
   }

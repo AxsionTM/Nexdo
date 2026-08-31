@@ -16,6 +16,7 @@ interface Task {
   project?: any;
   isAllDay?: boolean;
   completedAt?: string | null;
+  _count?: { children: number };
 }
 
 interface TasksState {
@@ -37,6 +38,7 @@ interface TasksState {
   setSelectedTask: (id: string | null) => void;
   setCurrentView: (view: string) => void;
   setCurrentProject: (id: string | null) => void;
+  refreshCurrentView: () => Promise<void>;
 }
 
 export const useTasksStore = create<TasksState>((set, get) => ({
@@ -75,40 +77,67 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     } catch {}
   },
 
+  refreshCurrentView: async () => {
+    const { currentView, currentProjectId, fetchToday, fetchOverdue, fetchTasks } = get();
+    if (currentView === 'today') {
+      await fetchToday();
+      await fetchOverdue();
+    } else if (currentView === 'overdue') {
+      await fetchOverdue();
+    } else if (currentView === 'project' && currentProjectId) {
+      await fetchTasks({ projectId: currentProjectId });
+    } else if (currentView === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const start = new Date(tomorrow);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(tomorrow);
+      end.setHours(23, 59, 59, 999);
+      await fetchTasks({
+        dueAfter: start.toISOString(),
+        dueBefore: end.toISOString(),
+      });
+    } else if (currentView === 'week') {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setDate(end.getDate() + 7);
+      end.setHours(23, 59, 59, 999);
+      await fetchTasks({
+        dueAfter: start.toISOString(),
+        dueBefore: end.toISOString(),
+      });
+    } else {
+      await fetchTasks();
+    }
+  },
+
   createTask: async (data) => {
     const { task } = await api.createTask(data);
-    const { currentView, fetchToday, fetchTasks, currentProjectId } = get();
-    if (currentView === 'today') await fetchToday();
-    else if (currentProjectId) await fetchTasks({ projectId: currentProjectId });
-    else await fetchTasks();
+    await get().refreshCurrentView();
     return task;
   },
 
   updateTask: async (id, data) => {
     await api.updateTask(id, data);
-    const { currentView, fetchToday, fetchTasks, currentProjectId } = get();
-    if (currentView === 'today') await fetchToday();
-    else if (currentProjectId) await fetchTasks({ projectId: currentProjectId });
-    else await fetchTasks();
+    await get().refreshCurrentView();
   },
 
   completeTask: async (id) => {
     await api.completeTask(id);
-    const { currentView, fetchToday, fetchTasks, currentProjectId } = get();
-    if (currentView === 'today') await fetchToday();
-    else if (currentProjectId) await fetchTasks({ projectId: currentProjectId });
-    else await fetchTasks();
+    await get().refreshCurrentView();
   },
 
   deleteTask: async (id) => {
     await api.deleteTask(id);
-    const { currentView, fetchToday, fetchTasks, currentProjectId } = get();
-    if (currentView === 'today') await fetchToday();
-    else if (currentProjectId) await fetchTasks({ projectId: currentProjectId });
-    else await fetchTasks();
+    const { selectedTaskId } = get();
+    if (selectedTaskId === id) {
+      set({ selectedTaskId: null });
+    }
+    await get().refreshCurrentView();
   },
 
   setSelectedTask: (id) => set({ selectedTaskId: id }),
-  setCurrentView: (view) => set({ currentView: view }),
+  setCurrentView: (view) => set({ currentView: view, selectedTaskId: null }),
   setCurrentProject: (id) => set({ currentProjectId: id }),
 }));
