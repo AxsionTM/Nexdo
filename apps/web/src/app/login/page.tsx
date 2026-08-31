@@ -1,19 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const err = searchParams.get('error');
+    if (err) setError(decodeURIComponent(err));
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +94,8 @@ export default function LoginPage() {
               {isLoading ? 'Вход...' : 'Войти'}
             </Button>
           </form>
+
+          <OAuthButtons />
 
           <p className="text-center text-sm text-muted-foreground">
             Нет аккаунта?{' '}

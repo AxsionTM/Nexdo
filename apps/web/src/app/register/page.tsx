@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
+import { useSearchParams } from 'next/navigation';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -98,6 +100,8 @@ export default function RegisterPage() {
               {isLoading ? 'Создание...' : 'Создать аккаунт'}
             </Button>
           </form>
+
+          <OAuthButtons />
 
           <p className="text-center text-sm text-muted-foreground">
             Уже есть аккаунт?{' '}

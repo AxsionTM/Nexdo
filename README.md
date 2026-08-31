@@ -87,6 +87,28 @@ ticktick-clone/
 | GET | /export/json | Экспорт JSON |
 | GET | /export/csv | Экспорт CSV |
 
+## OAuth (Google / GitHub)
+
+1. Создайте OAuth-приложение:
+   - Google: https://console.cloud.google.com/apis/credentials
+   - GitHub: https://github.com/settings/developers → OAuth Apps
+
+2. Redirect URI:
+   - Google: `http://localhost:3001/auth/google/callback`
+   - GitHub: `http://localhost:3001/auth/github/callback`
+
+3. В `apps/api/.env`:
+```
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+FRONTEND_URL=http://localhost:3000
+API_URL=http://localhost:3001
+```
+
+Без этих переменных кнопки OAuth видны, но вход через провайдера недоступен (email/пароль работает всегда).
+
 ## Лицензия
 
 MIT
