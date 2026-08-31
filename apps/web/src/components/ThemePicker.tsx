@@ -59,7 +59,7 @@ export function ThemePicker({ compact }: { compact?: boolean }) {
       {open && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-full left-0 mb-2 z-[110] w-64 rounded-xl border bg-card shadow-2xl p-3">
+          <div className="absolute bottom-full left-0 mb-2 z-[110] w-64 rounded-xl border bg-card shadow-2xl p-3 tf-glow-border">
             <p className="text-xs font-medium text-muted-foreground mb-2 px-1">Выберите тему</p>
             <div className="grid grid-cols-2 gap-2">
               {APP_THEMES.map((t) => (

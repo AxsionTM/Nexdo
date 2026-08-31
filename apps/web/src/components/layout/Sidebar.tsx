@@ -129,7 +129,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-full w-60 flex-col border-r bg-card">
+      <aside data-tour="sidebar" className="flex h-full w-60 flex-col border-r bg-card tf-glow-border">
         <div className="flex items-center gap-2 px-4 py-3 border-b">
           <Logo size={32} />
           <span className="font-semibold text-sm">TaskFlow</span>
@@ -176,7 +176,7 @@ export function Sidebar() {
             })}
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4" data-tour="projects">
             <div className="flex items-center px-2 py-1">
               <button
                 onClick={() => setProjectsOpen(!projectsOpen)}
@@ -276,7 +276,7 @@ export function Sidebar() {
             )}
           </div>
 
-          <div className="mt-4 space-y-0.5">
+          <div className="mt-4 space-y-0.5" data-tour="modules">
             <button
               onClick={() => handleViewClick('habits')}
               className={cn(
@@ -360,7 +360,7 @@ export function Sidebar() {
           </div>
         </nav>
 
-        <div className="border-t p-2 space-y-1">
+        <div className="border-t p-2 space-y-1" data-tour="theme">
           <ThemePicker />
           <button
             type="button"

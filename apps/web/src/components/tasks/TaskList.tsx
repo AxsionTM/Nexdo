@@ -87,7 +87,7 @@ export function TaskList() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <header className="px-6 py-3 border-b flex items-center justify-between gap-4">
+      <header data-tour="views" className="px-6 py-3 border-b flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">{title}</h1>
           {displayMode === 'list' && (
@@ -127,7 +127,7 @@ export function TaskList() {
 
       {displayMode === 'list' && (
         <div className="flex-1 overflow-y-auto px-4 py-3">
-          <QuickAdd />
+          <div data-tour="add-task"><QuickAdd /></div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">

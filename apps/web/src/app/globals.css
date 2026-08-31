@@ -192,17 +192,32 @@ html.theme-violet body {
   background-attachment: fixed;
 }
 
-/* Effects */
+
+/* ===== Visual effects (enabled via html.effects-on) ===== */
 .tf-star {
   animation-name: tf-drift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   opacity: 0.35;
 }
-@keyframes tf-drift {
-  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.25; }
-  50% { transform: translateY(-18px) translateX(8px); opacity: 0.85; }
+.tf-spark {
+  animation-name: tf-spark-fly;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: 0;
+  border-radius: 999px;
+  transform: rotate(-25deg);
 }
+@keyframes tf-drift {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+  50% { transform: translateY(-22px) translateX(10px); opacity: 0.9; }
+}
+@keyframes tf-spark-fly {
+  0% { transform: translate(-40px, 30px) rotate(-25deg); opacity: 0; }
+  15% { opacity: 0.85; }
+  100% { transform: translate(60px, -80px) rotate(-25deg); opacity: 0; }
+}
+
 .tf-glow-border {
   position: relative;
 }
@@ -215,13 +230,13 @@ html.theme-violet body {
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--primary) / 0.7),
+    hsl(var(--primary) / 0.75),
     transparent,
-    hsl(var(--primary) / 0.5),
+    hsl(var(--primary) / 0.45),
     transparent
   );
   background-size: 300% 100%;
-  animation: tf-snake 6s linear infinite;
+  animation: tf-snake 5s linear infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -231,4 +246,100 @@ html.theme-violet body {
 @keyframes tf-snake {
   0% { background-position: 0% 0%; }
   100% { background-position: 300% 0%; }
+}
+
+/* Hover glow — only when effects are on */
+html.effects-on aside button,
+html.effects-on aside a,
+html.effects-on main button,
+html.effects-on [role="checkbox"],
+html.effects-on .rounded-lg.border,
+html.effects-on .rounded-xl.border,
+html.effects-on .rounded-2xl.border,
+html.effects-on [class*="rounded-md"][class*="border"] {
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+html.effects-on aside nav button:hover,
+html.effects-on aside .group:hover,
+html.effects-on aside button:hover {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.45),
+    0 0 16px -2px hsl(var(--primary) / 0.35),
+    0 0 32px -6px hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary) / 0.4);
+}
+
+html.effects-on main .group:hover,
+html.effects-on main button:hover:not(:disabled),
+html.effects-on main [role="checkbox"]:hover {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.4),
+    0 0 14px -2px hsl(var(--primary) / 0.3);
+}
+
+/* Cards light up on hover */
+html.effects-on .rounded-xl.border:hover,
+html.effects-on .rounded-2xl.border:hover,
+html.effects-on .rounded-lg.border:hover {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.35),
+    0 4px 24px -4px hsl(var(--primary) / 0.2),
+    0 0 40px -10px hsl(var(--primary) / 0.15);
+  border-color: hsl(var(--primary) / 0.45);
+}
+
+/* Active nav item soft pulse */
+html.effects-on aside nav button.bg-primary\/10,
+html.effects-on aside nav button[class*="bg-primary"] {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.5),
+    0 0 20px -4px hsl(var(--primary) / 0.35);
+  animation: tf-active-pulse 2.8s ease-in-out infinite;
+}
+@keyframes tf-active-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px hsl(var(--primary) / 0.45), 0 0 16px -4px hsl(var(--primary) / 0.25); }
+  50% { box-shadow: 0 0 0 1px hsl(var(--primary) / 0.65), 0 0 28px -2px hsl(var(--primary) / 0.4); }
+}
+
+/* Task row hover */
+html.effects-on main .group.flex.items-center:hover {
+  box-shadow: inset 3px 0 0 0 hsl(var(--primary) / 0.7), 0 0 20px -6px hsl(var(--primary) / 0.2);
+}
+
+/* Sidebar edge glow */
+html.effects-on aside {
+  box-shadow: 4px 0 24px -8px hsl(var(--primary) / 0.15);
+}
+
+/* Focus / modal panels snake border when effects on */
+html.effects-on .tf-glow-border::before {
+  opacity: 1;
+}
+html:not(.effects-on) .tf-glow-border::before {
+  display: none;
+}
+
+/* Input focus glow */
+html.effects-on input:focus,
+html.effects-on textarea:focus,
+html.effects-on select:focus {
+  box-shadow:
+    0 0 0 2px hsl(var(--primary) / 0.25),
+    0 0 16px -2px hsl(var(--primary) / 0.35) !important;
+  border-color: hsl(var(--primary) / 0.6) !important;
+}
+
+/* Logo subtle breathe */
+html.effects-on aside img[alt="TaskFlow"] {
+  filter: drop-shadow(0 0 8px hsl(var(--primary) / 0.45));
+  animation: tf-logo-breathe 3.5s ease-in-out infinite;
+}
+@keyframes tf-logo-breathe {
+  0%, 100% { filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.35)); }
+  50% { filter: drop-shadow(0 0 14px hsl(var(--primary) / 0.65)); }
 }
