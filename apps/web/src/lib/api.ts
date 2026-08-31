@@ -115,6 +115,10 @@ class ApiClient {
     return this.request<{ project: any }>('/projects', { method: 'POST', body: JSON.stringify(data) });
   }
 
+  deleteProject(id: string) {
+    return this.request<{ success: boolean }>(`/projects/${id}`, { method: 'DELETE' });
+  }
+
   getTags() {
     return this.request<{ tags: any[] }>('/tags');
   }

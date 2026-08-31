@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={["light","dark","ocean","forest","crimson","violet"]}>
           <ServiceWorkerRegister />
           {children}
         </ThemeProvider>

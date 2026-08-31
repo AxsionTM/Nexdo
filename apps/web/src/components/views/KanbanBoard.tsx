@@ -238,11 +238,7 @@ export function KanbanBoard() {
     if (!newStatus || newStatus === task.status) return;
     if (task.status === 'TODO' && newStatus === 'CANCELLED') return;
 
-    if (newStatus === 'COMPLETED') {
-      await completeTask(taskId);
-    } else {
-      await updateTask(taskId, { status: newStatus });
-    }
+    await updateTask(taskId, { status: newStatus });
   };
 
   return (

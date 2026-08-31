@@ -17,6 +17,7 @@ interface ProjectsState {
   isLoading: boolean;
   fetchProjects: () => Promise<void>;
   createProject: (data: any) => Promise<Project>;
+  deleteProject: (id: string) => Promise<void>;
 }
 
 export const useProjectsStore = create<ProjectsState>((set) => ({
@@ -37,5 +38,10 @@ export const useProjectsStore = create<ProjectsState>((set) => ({
     const { project } = await api.createProject(data);
     set((state) => ({ projects: [...state.projects, project] }));
     return project;
+  },
+
+  deleteProject: async (id) => {
+    await api.deleteProject(id);
+    set((s) => ({ projects: s.projects.filter((p) => p.id !== id) }));
   },
 }));

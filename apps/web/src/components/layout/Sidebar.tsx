@@ -29,6 +29,7 @@ import { useProjectsStore } from '@/stores/projects';
 import { useTasksStore } from '@/stores/tasks';
 import { useFocusStore, formatRemaining } from '@/stores/focus';
 import { cn } from '@/lib/utils';
+import { ThemePicker } from '@/components/ThemePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from 'next-themes';
@@ -45,7 +46,7 @@ const smartViews = [
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
-  const { projects, fetchProjects, createProject } = useProjectsStore();
+  const { projects, fetchProjects, createProject, deleteProject } = useProjectsStore();
   const focusRunning = useFocusStore((s) => s.isRunning);
   const focusPaused = useFocusStore((s) => s.isPaused);
   const focusRemaining = useFocusStore((s) => s.remainingSeconds);
@@ -218,28 +219,54 @@ export function Sidebar() {
                     useTasksStore.getState().currentProjectId === project.id;
 
                   return (
-                    <button
+                    <div
                       key={project.id}
-                      onClick={() => handleProjectClick(project.id)}
                       className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                        'group flex w-full items-center gap-1 rounded-md pr-1 transition-colors',
                         isActive
                           ? 'bg-primary/10 text-primary font-medium'
                           : 'text-foreground hover:bg-accent'
                       )}
                     >
-                      {project.isInbox ? (
-                        <Inbox className="h-4 w-4 shrink-0" style={{ color: project.color }} />
-                      ) : (
-                        <Folder className="h-4 w-4 shrink-0" style={{ color: project.color }} />
+                      <button
+                        onClick={() => handleProjectClick(project.id)}
+                        className="flex flex-1 items-center gap-2 px-2 py-1.5 text-sm min-w-0"
+                      >
+                        {project.isInbox ? (
+                          <Inbox className="h-4 w-4 shrink-0" style={{ color: project.color }} />
+                        ) : (
+                          <Folder className="h-4 w-4 shrink-0" style={{ color: project.color }} />
+                        )}
+                        <span className="truncate">{project.name}</span>
+                        {project.taskCount !== undefined && project.taskCount > 0 && (
+                          <span className="ml-auto text-xs text-muted-foreground group-hover:hidden">
+                            {project.taskCount}
+                          </span>
+                        )}
+                      </button>
+                      {!project.isInbox && (
+                        <button
+                          type="button"
+                          title="Удалить проект"
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm(`Удалить проект «${project.name}»?`)) return;
+                            try {
+                              await deleteProject(project.id);
+                              if (useTasksStore.getState().currentProjectId === project.id) {
+                                setCurrentView('today');
+                                setCurrentProject(null);
+                              }
+                            } catch (err: any) {
+                              alert(err.message || 'Не удалось удалить');
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       )}
-                      <span className="truncate">{project.name}</span>
-                      {project.taskCount !== undefined && project.taskCount > 0 && (
-                        <span className="ml-auto text-xs text-muted-foreground">
-                          {project.taskCount}
-                        </span>
-                      )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -331,13 +358,8 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t p-2 space-y-1">
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-          </button>
+          <ThemePicker />
+
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"

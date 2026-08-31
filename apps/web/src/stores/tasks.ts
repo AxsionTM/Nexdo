@@ -92,7 +92,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       get();
 
     const includeCompleted =
-      displayMode === 'kanban' || displayMode === 'calendar' ? 'true' : undefined;
+      displayMode === 'kanban' || displayMode === 'calendar' || displayMode === 'matrix'
+        ? 'true'
+        : undefined;
 
     if (currentView === 'today') {
       await fetchToday();
