@@ -1,40 +1,86 @@
-import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
-import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { AppModule } from "./app.module";
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import dotenv from 'dotenv';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+import { authRouter } from './modules/auth/auth.routes';
+import { tasksRouter } from './modules/tasks/tasks.routes';
+import { projectsRouter } from './modules/projects/projects.routes';
+import { tagsRouter } from './modules/tags/tags.routes';
+import { habitsRouter } from './modules/habits/habits.routes';
+import { goalsRouter } from './modules/goals/goals.routes';
+import { focusRouter } from './modules/focus/focus.routes';
+import { smartListsRouter } from './modules/smart-lists/smart-lists.routes';
+import { errorHandler } from './common/middleware/error-handler';
+import { authMiddleware } from './common/middleware/auth';
 
-  app.enableCors({
-    origin: process.env.NEXTAUTH_URL || "http://localhost:3000",
-    credentials: true,
+dotenv.config();
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  },
+});
+
+const PORT = process.env.PORT || 3001;
+
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.use('/auth', authRouter);
+app.use('/tasks', authMiddleware, tasksRouter);
+app.use('/projects', authMiddleware, projectsRouter);
+app.use('/tags', authMiddleware, tagsRouter);
+app.use('/habits', authMiddleware, habitsRouter);
+app.use('/goals', authMiddleware, goalsRouter);
+app.use('/focus', authMiddleware, focusRouter);
+app.use('/smart-lists', authMiddleware, smartListsRouter);
+
+app.use(errorHandler);
+
+io.on('connection', (socket) => {
+  console.log(`Client connected: ${socket.id}`);
+
+  socket.on('join:user', (userId: string) => {
+    socket.join(`user:${userId}`);
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    })
-  );
+  socket.on('join:project', (projectId: string) => {
+    socket.join(`project:${projectId}`);
+  });
 
-  app.setGlobalPrefix("api");
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
+});
 
-  const config = new DocumentBuilder()
-    .setTitle("TickTick Clone API")
-    .setDescription("API полного аналога TickTick")
-    .setVersion("0.1.0")
-    .addBearerAuth()
-    .build();
+app.set('io', io);
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("api/docs", app, document);
+httpServer.listen(PORT, () => {
+  console.log(`API server running on port ${PORT}`);
+});
 
-  const port = process.env.API_PORT || 3001;
-  await app.listen(port);
-  console.log(`🚀 API запущен на http://localhost:${port}`);
-  console.log(`📚 Swagger: http://localhost:${port}/api/docs`);
-}
-
-bootstrap();
+export { io };

@@ -1,32 +1,12 @@
 {
-  "name": "ticktick-clone",
-  "version": "0.1.0",
+  "name": "taskflow",
+  "version": "1.0.0",
   "private": true,
-  "description": "Полный аналог TickTick с Premium-функциями бесплатно",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "description": "TaskFlow — менеджер задач",
   "scripts": {
-    "dev": "docker compose up -d && concurrently \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:ai\"",
-    "dev:web": "npm run dev --workspace=apps/web",
-    "dev:api": "npm run dev --workspace=apps/api",
-    "dev:ai": "cd apps/ai-service && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "build": "npm run build --workspaces --if-present",
-    "db:generate": "npm run generate --workspace=packages/database",
-    "db:migrate": "npm run migrate --workspace=packages/database",
-    "db:push": "npm run push --workspace=packages/database",
-    "db:studio": "npm run studio --workspace=packages/database",
-    "lint": "npm run lint --workspaces --if-present",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "typescript": "^5.4.5"
-  },
-  "engines": {
-    "node": ">=20"
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:ai": "cd apps/ai && uvicorn main:app --reload --port 8000",
+    "install:all": "cd apps/api && npm install && cd ../web && npm install"
   }
 }
