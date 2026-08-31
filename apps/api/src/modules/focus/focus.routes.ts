@@ -22,11 +22,11 @@ router.post('/sessions', async (req: AuthRequest, res, next) => {
   try {
     const data = z
       .object({
-        taskId: z.string().optional(),
+        taskId: z.string().optional().nullable(),
         durationMin: z.number().min(1),
         type: z.string().optional(),
         startedAt: z.string().datetime(),
-        endedAt: z.string().datetime().optional(),
+        endedAt: z.string().datetime().optional().nullable(),
         notes: z.string().optional(),
       })
       .parse(req.body);
@@ -64,10 +64,17 @@ router.get('/stats', async (req: AuthRequest, res, next) => {
     const totalMinutes = sessions.reduce((sum, s) => sum + s.durationMin, 0);
     const totalSessions = sessions.length;
 
+    const byDay: Record<string, number> = {};
+    for (const s of sessions) {
+      const key = s.startedAt.toISOString().slice(0, 10);
+      byDay[key] = (byDay[key] || 0) + s.durationMin;
+    }
+
     res.json({
       totalMinutes,
       totalSessions,
       averageMinutes: totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0,
+      byDay,
     });
   } catch (err) {
     next(err);

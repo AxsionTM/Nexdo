@@ -19,6 +19,8 @@ interface Task {
   _count?: { children: number };
 }
 
+export type DisplayMode = 'list' | 'kanban' | 'calendar' | 'matrix';
+
 interface TasksState {
   tasks: Task[];
   todayTasks: Task[];
@@ -27,6 +29,7 @@ interface TasksState {
   selectedTaskId: string | null;
   currentView: string;
   currentProjectId: string | null;
+  displayMode: DisplayMode;
 
   fetchTasks: (params?: Record<string, string>) => Promise<void>;
   fetchToday: () => Promise<void>;
@@ -38,6 +41,7 @@ interface TasksState {
   setSelectedTask: (id: string | null) => void;
   setCurrentView: (view: string) => void;
   setCurrentProject: (id: string | null) => void;
+  setDisplayMode: (mode: DisplayMode) => void;
   refreshCurrentView: () => Promise<void>;
 }
 
@@ -49,11 +53,17 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   selectedTaskId: null,
   currentView: 'today',
   currentProjectId: null,
+  displayMode: 'list',
 
   fetchTasks: async (params) => {
     set({ isLoading: true });
     try {
-      const { tasks } = await api.getTasks(params);
+      const query = { ...params };
+      // For kanban/matrix we need completed tasks too sometimes
+      if (!query.includeCompleted) {
+        // keep default
+      }
+      const { tasks } = await api.getTasks(query);
       set({ tasks, isLoading: false });
     } catch {
       set({ isLoading: false });
@@ -78,14 +88,28 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   },
 
   refreshCurrentView: async () => {
-    const { currentView, currentProjectId, fetchToday, fetchOverdue, fetchTasks } = get();
+    const { currentView, currentProjectId, displayMode, fetchToday, fetchOverdue, fetchTasks } =
+      get();
+
+    const includeCompleted =
+      displayMode === 'kanban' || displayMode === 'calendar' ? 'true' : undefined;
+
     if (currentView === 'today') {
       await fetchToday();
       await fetchOverdue();
+      // Also load broader set for kanban/calendar
+      if (displayMode !== 'list') {
+        await fetchTasks({
+          includeCompleted: includeCompleted || 'false',
+        });
+      }
     } else if (currentView === 'overdue') {
       await fetchOverdue();
     } else if (currentView === 'project' && currentProjectId) {
-      await fetchTasks({ projectId: currentProjectId });
+      await fetchTasks({
+        projectId: currentProjectId,
+        includeCompleted: includeCompleted || 'false',
+      });
     } else if (currentView === 'tomorrow') {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -96,6 +120,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       await fetchTasks({
         dueAfter: start.toISOString(),
         dueBefore: end.toISOString(),
+        includeCompleted: includeCompleted || 'false',
       });
     } else if (currentView === 'week') {
       const start = new Date();
@@ -106,9 +131,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       await fetchTasks({
         dueAfter: start.toISOString(),
         dueBefore: end.toISOString(),
+        includeCompleted: includeCompleted || 'false',
       });
     } else {
-      await fetchTasks();
+      await fetchTasks({ includeCompleted: includeCompleted || 'false' });
     }
   },
 
@@ -140,4 +166,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   setSelectedTask: (id) => set({ selectedTaskId: id }),
   setCurrentView: (view) => set({ currentView: view, selectedTaskId: null }),
   setCurrentProject: (id) => set({ currentProjectId: id }),
+  setDisplayMode: (mode) => {
+    set({ displayMode: mode });
+    // Refresh to load completed tasks for kanban/calendar if needed
+    setTimeout(() => get().refreshCurrentView(), 0);
+  },
 }));

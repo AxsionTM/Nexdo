@@ -1,11 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTasksStore } from '@/stores/tasks';
+import { useTasksStore, type DisplayMode } from '@/stores/tasks';
 import { useProjectsStore } from '@/stores/projects';
 import { TaskItem } from './TaskItem';
 import { QuickAdd } from './QuickAdd';
-import { Loader2 } from 'lucide-react';
+import { KanbanBoard } from '@/components/views/KanbanBoard';
+import { CalendarView } from '@/components/views/CalendarView';
+import { EisenhowerMatrix } from '@/components/views/EisenhowerMatrix';
+import { HabitsView } from '@/components/habits/HabitsView';
+import { GoalsView } from '@/components/goals/GoalsView';
+import { FocusView } from '@/components/focus/FocusView';
+import { Loader2, List, Columns3, CalendarDays, Grid2x2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const viewTitles: Record<string, string> = {
   today: 'Сегодня',
@@ -18,6 +25,13 @@ const viewTitles: Record<string, string> = {
   project: 'Проект',
 };
 
+const DISPLAY_MODES: { id: DisplayMode; label: string; icon: typeof List }[] = [
+  { id: 'list', label: 'Список', icon: List },
+  { id: 'kanban', label: 'Канбан', icon: Columns3 },
+  { id: 'calendar', label: 'Календарь', icon: CalendarDays },
+  { id: 'matrix', label: 'Матрица', icon: Grid2x2 },
+];
+
 export function TaskList() {
   const {
     todayTasks,
@@ -26,45 +40,25 @@ export function TaskList() {
     isLoading,
     currentView,
     currentProjectId,
-    fetchToday,
-    fetchOverdue,
-    fetchTasks,
+    displayMode,
+    setDisplayMode,
+    refreshCurrentView,
   } = useTasksStore();
   const { projects } = useProjectsStore();
 
   useEffect(() => {
-    if (currentView === 'today') {
-      fetchToday();
-      fetchOverdue();
-    } else if (currentView === 'overdue') {
-      fetchOverdue();
-    } else if (currentView === 'project' && currentProjectId) {
-      fetchTasks({ projectId: currentProjectId, includeCompleted: 'false' });
-    } else if (currentView === 'tomorrow') {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const start = new Date(tomorrow);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(tomorrow);
-      end.setHours(23, 59, 59, 999);
-      fetchTasks({
-        dueAfter: start.toISOString(),
-        dueBefore: end.toISOString(),
-      });
-    } else if (currentView === 'week') {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const end = new Date();
-      end.setDate(end.getDate() + 7);
-      end.setHours(23, 59, 59, 999);
-      fetchTasks({
-        dueAfter: start.toISOString(),
-        dueBefore: end.toISOString(),
-      });
-    } else {
-      fetchTasks();
+    if (
+      currentView !== 'habits' &&
+      currentView !== 'goals' &&
+      currentView !== 'focus'
+    ) {
+      refreshCurrentView();
     }
-  }, [currentView, currentProjectId, fetchToday, fetchOverdue, fetchTasks]);
+  }, [currentView, currentProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (currentView === 'habits') return <HabitsView />;
+  if (currentView === 'goals') return <GoalsView />;
+  if (currentView === 'focus') return <FocusView />;
 
   const displayTasks =
     currentView === 'today'
@@ -79,73 +73,113 @@ export function TaskList() {
     if (project) title = project.name;
   }
 
-  if (currentView === 'habits' || currentView === 'goals' || currentView === 'focus') {
-    return (
-      <div className="flex-1 flex flex-col">
-        <header className="px-6 py-4 border-b">
-          <h1 className="text-xl font-semibold">{title}</h1>
-        </header>
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          <p>Раздел «{title}» будет доступен на следующих этапах</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <header className="px-6 py-4 border-b flex items-center justify-between">
+      <header className="px-6 py-3 border-b flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">{title}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {displayTasks.length}{' '}
-            {displayTasks.length === 1
-              ? 'задача'
-              : displayTasks.length >= 2 && displayTasks.length <= 4
-              ? 'задачи'
-              : 'задач'}
-          </p>
+          {displayMode === 'list' && (
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {displayTasks.length}{' '}
+              {displayTasks.length === 1
+                ? 'задача'
+                : displayTasks.length >= 2 && displayTasks.length <= 4
+                ? 'задачи'
+                : 'задач'}
+            </p>
+          )}
+        </div>
+
+        <div className="flex rounded-lg border overflow-hidden shrink-0">
+          {DISPLAY_MODES.map((m) => {
+            const Icon = m.icon;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setDisplayMode(m.id)}
+                title={m.label}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors',
+                  displayMode === m.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-accent text-muted-foreground'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{m.label}</span>
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
-        <QuickAdd />
+      {displayMode === 'list' && (
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          <QuickAdd />
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : displayTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <p className="text-sm">Нет задач</p>
-            <p className="text-xs mt-1">Добавьте первую задачу выше</p>
-          </div>
-        ) : (
-          <div className="mt-2 space-y-0.5">
-            {currentView === 'today' && overdueTasks.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-xs font-medium text-red-500 uppercase tracking-wider px-3 mb-1">
-                  Просроченные
-                </h3>
-                {overdueTasks.map((task) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : displayTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <p className="text-sm">Нет задач</p>
+              <p className="text-xs mt-1">Добавьте первую задачу выше</p>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-0.5">
+              {currentView === 'today' && overdueTasks.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-medium text-red-500 uppercase tracking-wider px-3 mb-1">
+                    Просроченные
+                  </h3>
+                  {overdueTasks.map((task) => (
+                    <TaskItem key={task.id} task={task} />
+                  ))}
+                </div>
+              )}
+
+              <div>
+                {currentView === 'today' && todayTasks.length > 0 && (
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                    На сегодня
+                  </h3>
+                )}
+                {displayTasks.map((task) => (
                   <TaskItem key={task.id} task={task} />
                 ))}
               </div>
-            )}
-
-            <div>
-              {currentView === 'today' && todayTasks.length > 0 && (
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-1">
-                  На сегодня
-                </h3>
-              )}
-              {displayTasks.map((task) => (
-                <TaskItem key={task.id} task={task} />
-              ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {displayMode === 'kanban' &&
+        (isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        )}
-      </div>
+        ) : (
+          <KanbanBoard />
+        ))}
+
+      {displayMode === 'calendar' &&
+        (isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <CalendarView />
+        ))}
+
+      {displayMode === 'matrix' &&
+        (isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <EisenhowerMatrix />
+        ))}
     </div>
   );
 }

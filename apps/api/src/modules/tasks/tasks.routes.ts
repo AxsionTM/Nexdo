@@ -16,6 +16,7 @@ const createTaskSchema = z.object({
   sectionId: z.string().optional().nullable(),
   parentId: z.string().optional().nullable(),
   isAllDay: z.boolean().optional(),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
   tagIds: z.array(z.string()).optional(),
   checklist: z
     .array(z.object({ title: z.string(), isCompleted: z.boolean().optional() }))
@@ -221,6 +222,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
         sectionId: data.sectionId,
         parentId: data.parentId,
         isAllDay: data.isAllDay ?? true,
+        status: data.status || 'TODO',
         creatorId: req.userId!,
         tags: data.tagIds
           ? { create: data.tagIds.map((tagId) => ({ tagId })) }

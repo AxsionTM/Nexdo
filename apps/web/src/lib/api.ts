@@ -25,21 +25,14 @@ class ApiClient {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers,
-    });
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: { message: 'Ошибка сети' } }));
       throw new Error(error.error?.message || 'Ошибка запроса');
     }
-
     return res.json();
   }
 
@@ -79,29 +72,19 @@ class ApiClient {
   }
 
   createTask(data: any) {
-    return this.request<{ task: any }>('/tasks', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ task: any }>('/tasks', { method: 'POST', body: JSON.stringify(data) });
   }
 
   updateTask(id: string, data: any) {
-    return this.request<{ task: any }>(`/tasks/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ task: any }>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
   }
 
   deleteTask(id: string) {
-    return this.request<{ success: boolean }>(`/tasks/${id}`, {
-      method: 'DELETE',
-    });
+    return this.request<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' });
   }
 
   completeTask(id: string) {
-    return this.request<{ task: any }>(`/tasks/${id}/complete`, {
-      method: 'POST',
-    });
+    return this.request<{ task: any }>(`/tasks/${id}/complete`, { method: 'POST' });
   }
 
   addChecklistItem(taskId: string, data: { title: string; isCompleted?: boolean }) {
@@ -129,10 +112,7 @@ class ApiClient {
   }
 
   createProject(data: any) {
-    return this.request<{ project: any }>('/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ project: any }>('/projects', { method: 'POST', body: JSON.stringify(data) });
   }
 
   getTags() {
@@ -140,28 +120,73 @@ class ApiClient {
   }
 
   createTag(data: any) {
-    return this.request<{ tag: any }>('/tags', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return this.request<{ tag: any }>('/tags', { method: 'POST', body: JSON.stringify(data) });
   }
 
+  // Habits
   getHabits() {
     return this.request<{ habits: any[] }>('/habits');
   }
 
   createHabit(data: any) {
-    return this.request<{ habit: any }>('/habits', {
+    return this.request<{ habit: any }>('/habits', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  updateHabit(id: string, data: any) {
+    return this.request<{ habit: any }>(`/habits/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  deleteHabit(id: string) {
+    return this.request<{ success: boolean }>(`/habits/${id}`, { method: 'DELETE' });
+  }
+
+  logHabit(id: string, data: any) {
+    return this.request<{ log: any }>(`/habits/${id}/log`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  unlogHabit(id: string) {
+    return this.request<{ success: boolean }>(`/habits/${id}/log`, {
+      method: 'DELETE',
+      body: JSON.stringify({}),
+    });
+  }
+
+  // Goals
+  getGoals() {
+    return this.request<{ goals: any[] }>('/goals');
+  }
+
+  createGoal(data: any) {
+    return this.request<{ goal: any }>('/goals', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  updateGoal(id: string, data: any) {
+    return this.request<{ goal: any }>(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  deleteGoal(id: string) {
+    return this.request<{ success: boolean }>(`/goals/${id}`, { method: 'DELETE' });
+  }
+
+  // Focus
+  getFocusSessions() {
+    return this.request<{ sessions: any[] }>('/focus/sessions');
+  }
+
+  createFocusSession(data: any) {
+    return this.request<{ session: any }>('/focus/sessions', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  logHabit(id: string, data: any) {
-    return this.request<{ log: any }>(`/habits/${id}/log`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  getFocusStats() {
+    return this.request<{
+      totalMinutes: number;
+      totalSessions: number;
+      averageMinutes: number;
+      byDay?: Record<string, number>;
+    }>('/focus/stats');
   }
 }
 
