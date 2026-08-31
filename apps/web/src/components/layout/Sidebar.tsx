@@ -21,10 +21,12 @@ import {
   Download,
   X,
   Trash2,
+  ListTodo,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useProjectsStore } from '@/stores/projects';
 import { useTasksStore } from '@/stores/tasks';
+import { useFocusStore, formatRemaining } from '@/stores/focus';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +36,7 @@ import { api } from '@/lib/api';
 
 const smartViews = [
   { id: 'today', label: 'Сегодня', icon: Sun },
+  { id: 'agenda', label: 'Повестка дня', icon: ListTodo },
   { id: 'tomorrow', label: 'Завтра', icon: Calendar },
   { id: 'week', label: 'На этой неделе', icon: LayoutList },
   { id: 'overdue', label: 'Просроченные', icon: AlertCircle },
@@ -42,6 +45,10 @@ const smartViews = [
 export function Sidebar() {
   const { user, logout } = useAuthStore();
   const { projects, fetchProjects, createProject } = useProjectsStore();
+  const focusRunning = useFocusStore((s) => s.isRunning);
+  const focusPaused = useFocusStore((s) => s.isPaused);
+  const focusRemaining = useFocusStore((s) => s.remainingSeconds);
+  const focusMode = useFocusStore((s) => s.mode);
   const { currentView, setCurrentView, setCurrentProject, overdueTasks, fetchOverdue } =
     useTasksStore();
   const { theme, setTheme } = useTheme();
@@ -269,11 +276,31 @@ export function Sidebar() {
                 'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
                 currentView === 'focus'
                   ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-foreground hover:bg-accent'
+                  : 'text-foreground hover:bg-accent',
+                focusRunning && !focusPaused && 'ring-1 ring-emerald-500/50 bg-emerald-500/10'
               )}
             >
-              <Timer className="h-4 w-4" />
-              Фокус
+              <Timer
+                className={cn(
+                  'h-4 w-4',
+                  focusRunning && !focusPaused && 'text-emerald-500'
+                )}
+              />
+              <span className="flex-1 text-left">Фокус</span>
+              {focusRunning && (
+                <span
+                  className={cn(
+                    'text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full',
+                    focusPaused
+                      ? 'bg-muted text-muted-foreground'
+                      : focusMode === 'break'
+                        ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400'
+                        : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 animate-pulse'
+                  )}
+                >
+                  {formatRemaining(focusRemaining)}
+                </span>
+              )}
             </button>
             <button
               onClick={() => handleViewClick('trash')}

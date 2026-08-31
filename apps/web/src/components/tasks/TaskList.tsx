@@ -12,6 +12,7 @@ import { HabitsView } from '@/components/habits/HabitsView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FocusView } from '@/components/focus/FocusView';
 import { TrashView } from '@/components/tasks/TrashView';
+import { AgendaView } from '@/components/views/AgendaView';
 import { Loader2, List, Columns3, CalendarDays, Grid2x2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,7 +53,8 @@ export function TaskList() {
       currentView !== 'habits' &&
       currentView !== 'goals' &&
       currentView !== 'focus' &&
-      currentView !== 'trash'
+      currentView !== 'trash' &&
+      currentView !== 'agenda'
     ) {
       refreshCurrentView();
     }
@@ -62,6 +64,7 @@ export function TaskList() {
   if (currentView === 'goals') return <GoalsView />;
   if (currentView === 'focus') return <FocusView />;
   if (currentView === 'trash') return <TrashView />;
+  if (currentView === 'agenda') return <AgendaView />;
 
   const displayTasks =
     currentView === 'today'

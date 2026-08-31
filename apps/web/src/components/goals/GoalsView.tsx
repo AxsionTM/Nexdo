@@ -184,31 +184,42 @@ export function GoalsView() {
                           />
                         </div>
                         {!goal.isCompleted && (
-                          <div className="flex gap-1.5 mt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs"
-                              onClick={() => handleProgress(goal, 1)}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            {[1, 5, 10, 50, 100].map((n) => (
+                              <Button
+                                key={n}
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs px-2"
+                                onClick={() => handleProgress(goal, n)}
+                              >
+                                +{n}
+                              </Button>
+                            ))}
+                            <form
+                              className="flex items-center gap-1"
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const input = e.currentTarget.elements.namedItem(
+                                  'custom'
+                                ) as HTMLInputElement;
+                                const val = Number(input.value);
+                                if (!val || val <= 0) return;
+                                handleProgress(goal, val);
+                                input.value = '';
+                              }}
                             >
-                              +1
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs"
-                              onClick={() => handleProgress(goal, 5)}
-                            >
-                              +5
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs"
-                              onClick={() => handleProgress(goal, 10)}
-                            >
-                              +10
-                            </Button>
+                              <Input
+                                name="custom"
+                                type="number"
+                                min={1}
+                                placeholder="Своё"
+                                className="h-7 w-16 text-xs px-2"
+                              />
+                              <Button type="submit" size="sm" variant="secondary" className="h-7 text-xs px-2">
+                                +
+                              </Button>
+                            </form>
                           </div>
                         )}
                       </div>

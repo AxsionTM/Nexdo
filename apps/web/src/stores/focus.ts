@@ -8,6 +8,8 @@ interface FocusState {
   workMinutes: number;
   breakMinutes: number;
   remainingSeconds: number;
+  /** Absolute timestamp when current segment ends (for background accuracy) */
+  endsAt: number | null;
   completedPomodoros: number;
   sessions: any[];
   stats: { totalMinutes: number; totalSessions: number; averageMinutes: number } | null;
@@ -18,11 +20,21 @@ interface FocusState {
   pause: () => void;
   resume: () => void;
   reset: () => void;
+  /** Sync remaining from endsAt — call every second from global ticker */
   tick: () => void;
   completeSession: () => Promise<void>;
   fetchStats: () => Promise<void>;
   fetchSessions: () => Promise<void>;
 }
+
+function formatRemaining(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m >= 1) return `${m}м`;
+  return `${s}с`;
+}
+
+export { formatRemaining };
 
 export const useFocusStore = create<FocusState>((set, get) => ({
   isRunning: false,
@@ -31,6 +43,7 @@ export const useFocusStore = create<FocusState>((set, get) => ({
   workMinutes: 25,
   breakMinutes: 5,
   remainingSeconds: 25 * 60,
+  endsAt: null,
   completedPomodoros: 0,
   sessions: [],
   stats: null,
@@ -38,7 +51,7 @@ export const useFocusStore = create<FocusState>((set, get) => ({
   setWorkMinutes: (m) => {
     const { isRunning } = get();
     if (!isRunning) {
-      set({ workMinutes: m, remainingSeconds: m * 60, mode: 'work' });
+      set({ workMinutes: m, remainingSeconds: Math.round(m * 60), mode: 'work', endsAt: null });
     }
   },
 
@@ -46,16 +59,33 @@ export const useFocusStore = create<FocusState>((set, get) => ({
 
   start: () => {
     const { workMinutes } = get();
+    const total = Math.round(workMinutes * 60);
     set({
       isRunning: true,
       isPaused: false,
       mode: 'work',
-      remainingSeconds: workMinutes * 60,
+      remainingSeconds: total,
+      endsAt: Date.now() + total * 1000,
     });
   },
 
-  pause: () => set({ isPaused: true }),
-  resume: () => set({ isPaused: false }),
+  pause: () => {
+    const { endsAt, isRunning } = get();
+    if (!isRunning || !endsAt) {
+      set({ isPaused: true, endsAt: null });
+      return;
+    }
+    const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+    set({ isPaused: true, remainingSeconds: left, endsAt: null });
+  },
+
+  resume: () => {
+    const { remainingSeconds } = get();
+    set({
+      isPaused: false,
+      endsAt: Date.now() + remainingSeconds * 1000,
+    });
+  },
 
   reset: () => {
     const { workMinutes } = get();
@@ -63,33 +93,49 @@ export const useFocusStore = create<FocusState>((set, get) => ({
       isRunning: false,
       isPaused: false,
       mode: 'work',
-      remainingSeconds: workMinutes * 60,
+      remainingSeconds: Math.round(workMinutes * 60),
+      endsAt: null,
     });
   },
 
   tick: () => {
-    const { remainingSeconds, isRunning, isPaused, mode, breakMinutes, workMinutes, completedPomodoros } =
+    const { isRunning, isPaused, endsAt, mode, breakMinutes, workMinutes, completedPomodoros } =
       get();
-    if (!isRunning || isPaused) return;
+    if (!isRunning || isPaused || !endsAt) return;
 
-    if (remainingSeconds <= 1) {
+    const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+    if (left <= 0) {
       if (mode === 'work') {
+        const breakSec = Math.round(breakMinutes * 60);
         set({
           mode: 'break',
-          remainingSeconds: breakMinutes * 60,
+          remainingSeconds: breakSec,
+          endsAt: Date.now() + breakSec * 1000,
           completedPomodoros: completedPomodoros + 1,
         });
         get().completeSession();
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          try {
+            new Notification('Фокус — перерыв', { body: 'Рабочий интервал завершён. Время отдыхать.' });
+          } catch {}
+        }
       } else {
+        const workSec = Math.round(workMinutes * 60);
         set({
           mode: 'work',
-          remainingSeconds: workMinutes * 60,
+          remainingSeconds: workSec,
+          endsAt: Date.now() + workSec * 1000,
         });
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          try {
+            new Notification('Фокус — работа', { body: 'Перерыв окончен. Можно продолжать.' });
+          } catch {}
+        }
       }
       return;
     }
 
-    set({ remainingSeconds: remainingSeconds - 1 });
+    set({ remainingSeconds: left });
   },
 
   completeSession: async () => {

@@ -110,12 +110,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://ticktick:ticktick_secret@postgres:5432/ticktick
-    depends_on:
-      postgres:
-        condition: service_healthy
+      PYTHONPATH: /app
     volumes:
       - ./apps/ai:/app
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   nginx:
     image: nginx:alpine

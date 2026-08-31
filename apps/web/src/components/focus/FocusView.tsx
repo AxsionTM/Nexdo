@@ -13,6 +13,7 @@ function formatTime(seconds: number): string {
 }
 
 const PRESETS = [
+  { work: 0.5, break: 0.5, label: '30 сек' },
   { work: 25, break: 5, label: '25 / 5' },
   { work: 45, break: 10, label: '45 / 10' },
   { work: 50, break: 10, label: '50 / 10' },
@@ -46,13 +47,9 @@ export function FocusView() {
     fetchSessions();
   }, [fetchStats, fetchSessions]);
 
-  useEffect(() => {
-    if (!isRunning || isPaused) return;
-    const id = setInterval(() => tick(), 1000);
-    return () => clearInterval(id);
-  }, [isRunning, isPaused, tick]);
+  // Timer runs in FocusTicker (global)
 
-  const totalForMode = mode === 'work' ? workMinutes * 60 : breakMinutes * 60;
+  const totalForMode = mode === 'work' ? Math.round(workMinutes * 60) : Math.round(breakMinutes * 60);
   const progress = totalForMode > 0 ? 1 - remainingSeconds / totalForMode : 0;
   const circumference = 2 * Math.PI * 110;
   const strokeDashoffset = circumference * (1 - progress);

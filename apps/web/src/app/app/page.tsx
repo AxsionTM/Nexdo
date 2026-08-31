@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskDetail } from '@/components/tasks/TaskDetail';
 import { NotificationPrompt } from '@/components/NotificationPrompt';
+import { FocusTicker } from '@/components/focus/FocusTicker';
 import { Loader2 } from 'lucide-react';
 
 export default function AppPage() {
@@ -39,6 +40,7 @@ export default function AppPage() {
       </main>
       <TaskDetail />
       <NotificationPrompt />
+      <FocusTicker />
     </div>
   );
 }
