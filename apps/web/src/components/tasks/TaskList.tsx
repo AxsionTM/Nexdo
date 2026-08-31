@@ -13,6 +13,7 @@ import { GoalsView } from '@/components/goals/GoalsView';
 import { FocusView } from '@/components/focus/FocusView';
 import { TrashView } from '@/components/tasks/TrashView';
 import { AgendaView } from '@/components/views/AgendaView';
+import { PulseView } from '@/components/views/PulseView';
 import { Loader2, List, Columns3, CalendarDays, Grid2x2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +55,8 @@ export function TaskList() {
       currentView !== 'goals' &&
       currentView !== 'focus' &&
       currentView !== 'trash' &&
-      currentView !== 'agenda'
+      currentView !== 'agenda' &&
+      currentView !== 'pulse'
     ) {
       refreshCurrentView();
     }
@@ -65,6 +67,7 @@ export function TaskList() {
   if (currentView === 'focus') return <FocusView />;
   if (currentView === 'trash') return <TrashView />;
   if (currentView === 'agenda') return <AgendaView />;
+  if (currentView === 'pulse') return <PulseView />;
 
   const displayTasks =
     currentView === 'today'
@@ -134,23 +137,7 @@ export function TaskList() {
             </div>
           ) : (
             <div className="mt-2 space-y-0.5">
-              {currentView === 'today' && overdueTasks.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="text-xs font-medium text-red-500 uppercase tracking-wider px-3 mb-1">
-                    Просроченные
-                  </h3>
-                  {overdueTasks.map((task) => (
-                    <TaskItem key={task.id} task={task} />
-                  ))}
-                </div>
-              )}
-
               <div>
-                {currentView === 'today' && todayTasks.length > 0 && (
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-1">
-                    На сегодня
-                  </h3>
-                )}
                 {displayTasks.map((task) => (
                   <TaskItem key={task.id} task={task} />
                 ))}

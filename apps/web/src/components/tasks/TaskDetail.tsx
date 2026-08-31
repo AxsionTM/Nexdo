@@ -42,6 +42,9 @@ export function TaskDetail() {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('NONE');
   const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
   const [projectId, setProjectId] = useState('');
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -67,6 +70,9 @@ export function TaskDetail() {
       setDescription(t.description || '');
       setPriority(t.priority || 'NONE');
       setDueDate(t.dueDate ? t.dueDate.slice(0, 10) : '');
+      setDueTime(t.dueDate && !t.isAllDay ? new Date(t.dueDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '');
+      setStartDate(t.startDate ? t.startDate.slice(0, 10) : '');
+      setStartTime(t.startDate && !t.isAllDay ? new Date(t.startDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '');
       setProjectId(t.projectId || '');
       setSelectedTagIds(t.tags?.map((tt: any) => tt.tag.id) || []);
       setRecurrenceType(t.recurrenceType || 'NONE');
@@ -116,7 +122,24 @@ export function TaskDetail() {
     save({ priority: p });
   };
 
-  const handleDueDateChange = (value: string) => {
+  
+  const saveDates = (sDate: string, sTime: string, dDate: string, dTime: string) => {
+    const toIso = (date: string, time: string) => {
+      if (!date) return null;
+      const t = time || '12:00';
+      const d = new Date(`${date}T${t}:00`);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+    const start = toIso(sDate, sTime);
+    const due = toIso(dDate, dTime);
+    save({
+      startDate: start,
+      dueDate: due,
+      isAllDay: !sTime && !dTime,
+    });
+  };
+
+const handleDueDateChange = (value: string) => {
     setDueDate(value);
     if (value) {
       const d = new Date(value);
@@ -392,16 +415,66 @@ export function TaskDetail() {
               )}
             </div>
 
-            {/* Due date */}
-            <div className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-accent">
-              <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-muted-foreground shrink-0">Срок</span>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => handleDueDateChange(e.target.value)}
-                className="ml-auto bg-transparent text-sm outline-none text-right"
-              />
+                        {/* Dates */}
+            <div className="rounded-md px-2 py-2 text-sm space-y-2 border border-transparent hover:border-border">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>Срок</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pl-6">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Начало</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      if (e.target.value && !startTime) setStartTime('09:00');
+                      saveDates(e.target.value, startTime, dueDate, dueTime);
+                    }}
+                    className="mt-0.5 w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Время</label>
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      saveDates(startDate, e.target.value, dueDate, dueTime);
+                    }}
+                    disabled={!startDate}
+                    className="mt-0.5 w-full rounded-md border border-input bg-card px-2 py-1 text-sm disabled:opacity-40"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Окончание</label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => {
+                      setDueDate(e.target.value);
+                      if (e.target.value && !dueTime) setDueTime(startTime || '10:00');
+                      saveDates(startDate, startTime, e.target.value, dueTime || startTime || '10:00');
+                    }}
+                    className="mt-0.5 w-full rounded-md border border-input bg-card px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Время</label>
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => {
+                      setDueTime(e.target.value);
+                      saveDates(startDate, startTime, dueDate, e.target.value);
+                    }}
+                    disabled={!dueDate}
+                    className="mt-0.5 w-full rounded-md border border-input bg-card px-2 py-1 text-sm disabled:opacity-40"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Project */}

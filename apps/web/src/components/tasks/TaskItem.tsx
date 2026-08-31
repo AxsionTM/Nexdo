@@ -1,102 +1,89 @@
 'use client';
 
-import { formatDate, cn } from '@/lib/utils';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, Tag, ListTodo } from 'lucide-react';
 import { useTasksStore } from '@/stores/tasks';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn, formatDate } from '@/lib/utils';
+import { Calendar, Flag } from 'lucide-react';
 
-interface TaskItemProps {
-  task: any;
-  depth?: number;
-}
+const FLAG_COLOR: Record<string, string> = {
+  HIGH: 'text-red-500 fill-red-500',
+  MEDIUM: 'text-amber-500 fill-amber-500',
+  LOW: 'text-blue-500 fill-blue-500',
+  NONE: '',
+};
 
-export function TaskItem({ task, depth = 0 }: TaskItemProps) {
-  const { completeTask, setSelectedTask, selectedTaskId } = useTasksStore();
-
-  const handleComplete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await completeTask(task.id);
-  };
-
-  const isCompleted = task.status === 'COMPLETED';
+export function TaskItem({ task, depth = 0 }: { task: any; depth?: number }) {
+  const { selectedTaskId, setSelectedTask, completeTask } = useTasksStore();
   const isSelected = selectedTaskId === task.id;
-  const childCount = task._count?.children ?? task.children?.length ?? 0;
-  const checklistDone = task.checklist?.filter((c: any) => c.isCompleted).length ?? 0;
-  const checklistTotal = task.checklist?.length ?? 0;
+  const isOverdue =
+    task.dueDate &&
+    new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0)) &&
+    task.status !== 'COMPLETED';
 
   return (
     <div>
       <div
         onClick={() => setSelectedTask(task.id)}
         className={cn(
-          'group flex items-start gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors border',
-          isSelected
-            ? 'bg-primary/5 border-primary/30'
-            : 'border-transparent hover:bg-accent/50 hover:border-border',
-          isCompleted && 'opacity-60'
+          'group flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors',
+          isSelected ? 'bg-primary/10' : 'hover:bg-accent/60'
         )}
-        style={{ paddingLeft: `${12 + depth * 20}px` }}
+        style={{ paddingLeft: `${12 + depth * 16}px` }}
       >
-        <div className="pt-0.5" onClick={handleComplete}>
-          <Checkbox checked={isCompleted} priority={task.priority} />
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            completeTask(task.id);
+          }}
+        >
+          <Checkbox checked={task.status === 'COMPLETED'} priority={task.priority} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p
-            className={cn(
-              'text-sm leading-snug',
-              isCompleted && 'line-through text-muted-foreground'
+          <div className="flex items-center gap-1.5">
+            {task.priority && task.priority !== 'NONE' && (
+              <Flag className={cn('h-3.5 w-3.5 shrink-0', FLAG_COLOR[task.priority])} />
             )}
-          >
-            {task.title}
-          </p>
-
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <p
+              className={cn(
+                'text-sm truncate',
+                task.status === 'COMPLETED' && 'line-through text-muted-foreground'
+              )}
+            >
+              {task.title}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {task.dueDate && (
               <span
                 className={cn(
-                  'inline-flex items-center gap-1 text-xs',
-                  new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0)) &&
-                    !isCompleted
-                    ? 'text-red-500'
-                    : 'text-muted-foreground'
+                  'inline-flex items-center gap-1 text-[11px]',
+                  isOverdue ? 'text-red-500' : 'text-muted-foreground'
                 )}
               >
                 <Calendar className="h-3 w-3" />
                 {formatDate(task.dueDate)}
               </span>
             )}
-
+            {task.tags?.map((tt: any) => (
+              <span
+                key={tt.tag?.id || tt.tagId}
+                className="text-[10px] px-1.5 py-0 rounded-full border"
+                style={{
+                  borderColor: (tt.tag?.color || '#888') + '80',
+                  color: tt.tag?.color || '#888',
+                }}
+              >
+                {tt.tag?.name}
+              </span>
+            ))}
             {task.project && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-1.5 w-1.5 rounded-full"
                   style={{ backgroundColor: task.project.color }}
                 />
                 {task.project.name}
-              </span>
-            )}
-
-            {task.tags?.map((tt: any) => (
-              <span
-                key={tt.tag?.id || tt.id}
-                className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
-              >
-                <Tag className="h-2.5 w-2.5" />
-                {tt.tag?.name || tt.name}
-              </span>
-            ))}
-
-            {checklistTotal > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <ListTodo className="h-3 w-3" />
-                {checklistDone}/{checklistTotal}
-              </span>
-            )}
-
-            {childCount > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {childCount} подзадач
               </span>
             )}
           </div>

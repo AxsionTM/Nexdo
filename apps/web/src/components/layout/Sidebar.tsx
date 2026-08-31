@@ -22,6 +22,7 @@ import {
   X,
   Trash2,
   ListTodo,
+  Activity,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useProjectsStore } from '@/stores/projects';
@@ -301,6 +302,18 @@ export function Sidebar() {
                   {formatRemaining(focusRemaining)}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => handleViewClick('pulse')}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                currentView === 'pulse'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-foreground hover:bg-accent'
+              )}
+            >
+              <Activity className="h-4 w-4" />
+              Пульс
             </button>
             <button
               onClick={() => handleViewClick('trash')}

@@ -6,8 +6,25 @@ import { AuthRequest } from '../../common/middleware/auth';
 
 const router = Router();
 
+const DEFAULT_TAGS = [
+  { name: 'работа', color: '#3B82F6' },
+  { name: 'дом', color: '#10B981' },
+  { name: 'зал', color: '#F59E0B' },
+  { name: 'учёба', color: '#8B5CF6' },
+  { name: 'личное', color: '#EC4899' },
+];
+
+async function ensureDefaultTags(userId: string) {
+  const count = await prisma.tag.count({ where: { userId } });
+  if (count > 0) return;
+  await prisma.tag.createMany({
+    data: DEFAULT_TAGS.map((t) => ({ ...t, userId })),
+  });
+}
+
 router.get('/', async (req: AuthRequest, res, next) => {
   try {
+    await ensureDefaultTags(req.userId!);
     const tags = await prisma.tag.findMany({
       where: { userId: req.userId },
       orderBy: { name: 'asc' },
