@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskDetail } from '@/components/tasks/TaskDetail';
+import { NotificationPrompt } from '@/components/NotificationPrompt';
 import { Loader2 } from 'lucide-react';
 
 export default function AppPage() {
@@ -37,6 +38,7 @@ export default function AppPage() {
         <TaskList />
       </main>
       <TaskDetail />
+      <NotificationPrompt />
     </div>
   );
 }
