@@ -26,6 +26,7 @@ export function ThemePicker({ compact }: { compact?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [hoverId, setHoverId] = useState<AppThemeId | null>(null);
+  const [previewPos, setPreviewPos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     setMounted(true);
@@ -39,6 +40,7 @@ export function ThemePicker({ compact }: { compact?: boolean }) {
   if (!mounted) return null;
 
   const current = (theme as AppThemeId) || 'dark';
+  const hoverTheme = APP_THEMES.find((t) => t.id === hoverId);
 
   return (
     <div className="relative">
@@ -56,15 +58,19 @@ export function ThemePicker({ compact }: { compact?: boolean }) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-full left-0 mb-2 z-50 w-64 rounded-xl border bg-card shadow-xl p-3">
+          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div className="absolute bottom-full left-0 mb-2 z-[110] w-64 rounded-xl border bg-card shadow-2xl p-3">
             <p className="text-xs font-medium text-muted-foreground mb-2 px-1">Выберите тему</p>
             <div className="grid grid-cols-2 gap-2">
               {APP_THEMES.map((t) => (
                 <button
                   key={t.id}
                   type="button"
-                  onMouseEnter={() => setHoverId(t.id)}
+                  onMouseEnter={(e) => {
+                    setHoverId(t.id);
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setPreviewPos({ x: rect.right + 12, y: rect.top });
+                  }}
                   onMouseLeave={() => setHoverId(null)}
                   onClick={() => {
                     setTheme(t.id);
@@ -76,7 +82,6 @@ export function ThemePicker({ compact }: { compact?: boolean }) {
                     current === t.id && 'ring-2 ring-primary border-primary'
                   )}
                 >
-                  {/* Mini preview */}
                   <div
                     className="h-14 rounded-md overflow-hidden flex border border-black/10 mb-1.5"
                     style={{ background: t.preview.bg }}
@@ -108,45 +113,48 @@ export function ThemePicker({ compact }: { compact?: boolean }) {
                     </div>
                     {current === t.id && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                   </div>
-
-                  {/* Larger hover preview */}
-                  {hoverId === t.id && (
-                    <div className="absolute left-full top-0 ml-2 z-50 hidden sm:block pointer-events-none">
-                      <div
-                        className="w-48 h-28 rounded-xl border shadow-2xl overflow-hidden flex"
-                        style={{ background: t.preview.bg }}
-                      >
-                        <div
-                          className="w-14 h-full border-r border-white/10 p-1.5"
-                          style={{ background: t.preview.sidebar }}
-                        >
-                          <div
-                            className="h-2 w-8 rounded mb-1"
-                            style={{ background: t.preview.primary }}
-                          />
-                          <div className="space-y-1">
-                            <div className="h-1.5 w-10 rounded bg-white/20" />
-                            <div className="h-1.5 w-8 rounded bg-white/15" />
-                            <div className="h-1.5 w-9 rounded bg-white/10" />
-                          </div>
-                        </div>
-                        <div className="flex-1 p-2">
-                          <div
-                            className="text-[9px] font-semibold mb-1"
-                            style={{ color: t.preview.primary }}
-                          >
-                            TaskFlow
-                          </div>
-                          <div className="h-2 w-20 rounded bg-white/15 mb-1" />
-                          <div className="h-8 rounded-md bg-white/5 border border-white/10" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Fixed preview above everything */}
+          {hoverTheme && (
+            <div
+              className="fixed z-[120] pointer-events-none"
+              style={{ left: previewPos.x, top: previewPos.y }}
+            >
+              <div
+                className="w-52 h-32 rounded-xl border-2 shadow-2xl overflow-hidden flex ring-2 ring-primary/40"
+                style={{ background: hoverTheme.preview.bg, borderColor: hoverTheme.preview.primary }}
+              >
+                <div
+                  className="w-16 h-full border-r border-white/10 p-1.5"
+                  style={{ background: hoverTheme.preview.sidebar }}
+                >
+                  <div
+                    className="h-2.5 w-10 rounded mb-1.5"
+                    style={{ background: hoverTheme.preview.primary }}
+                  />
+                  <div className="space-y-1">
+                    <div className="h-1.5 w-12 rounded bg-white/25" />
+                    <div className="h-1.5 w-10 rounded bg-white/15" />
+                    <div className="h-1.5 w-11 rounded bg-white/10" />
+                  </div>
+                </div>
+                <div className="flex-1 p-2">
+                  <div
+                    className="text-[10px] font-semibold mb-1.5"
+                    style={{ color: hoverTheme.preview.primary }}
+                  >
+                    TaskFlow · {hoverTheme.label}
+                  </div>
+                  <div className="h-2.5 w-24 rounded bg-white/15 mb-1.5" />
+                  <div className="h-10 rounded-md bg-white/5 border border-white/10" />
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

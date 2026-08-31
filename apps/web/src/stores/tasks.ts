@@ -98,15 +98,17 @@ export const useTasksStore = create<TasksState>((set, get) => ({
 
     if (currentView === 'today') {
       await fetchToday();
-      await fetchOverdue();
-      // Also load broader set for kanban/calendar
+      // Sync tasks from today for kanban/calendar/matrix (no longer merge overdue into today)
+      const { todayTasks } = get();
+      set({ tasks: todayTasks });
       if (displayMode !== 'list') {
-        await fetchTasks({
-          includeCompleted: includeCompleted || 'false',
-        });
+        // keep tasks as today set
       }
     } else if (currentView === 'overdue') {
       await fetchOverdue();
+      // Put overdue list into tasks so kanban/calendar/matrix use the same set
+      const { overdueTasks } = get();
+      set({ tasks: overdueTasks });
     } else if (currentView === 'project' && currentProjectId) {
       await fetchTasks({
         projectId: currentProjectId,
@@ -133,7 +135,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       await fetchTasks({
         dueAfter: start.toISOString(),
         dueBefore: end.toISOString(),
-        includeCompleted: includeCompleted || 'false',
+        includeCompleted: 'true',
       });
     } else {
       await fetchTasks({ includeCompleted: includeCompleted || 'false' });

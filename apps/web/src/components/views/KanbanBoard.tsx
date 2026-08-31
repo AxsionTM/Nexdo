@@ -179,10 +179,8 @@ export function KanbanBoard() {
   );
 
   const allTasks = useMemo(() => {
-    if (currentView === 'today') {
-      const ids = new Set(todayTasks.map((t) => t.id));
-      return [...overdueTasks.filter((t) => !ids.has(t.id)), ...todayTasks];
-    }
+    if (currentView === 'today') return todayTasks;
+    if (currentView === 'overdue') return overdueTasks;
     return tasks;
   }, [currentView, tasks, todayTasks, overdueTasks]);
 

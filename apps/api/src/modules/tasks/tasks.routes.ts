@@ -118,11 +118,19 @@ router.get('/today', async (req: AuthRequest, res, next) => {
         creatorId: req.userId,
         isDeleted: false,
         isArchived: false,
-        status: { not: 'COMPLETED' },
         parentId: null,
         OR: [
-          { dueDate: { gte: start, lte: end } },
-          { startDate: { gte: start, lte: end } },
+          {
+            status: { not: 'COMPLETED' },
+            OR: [
+              { dueDate: { gte: start, lte: end } },
+              { startDate: { gte: start, lte: end } },
+            ],
+          },
+          {
+            status: 'COMPLETED',
+            completedAt: { gte: start, lte: end },
+          },
         ],
       },
       include: {

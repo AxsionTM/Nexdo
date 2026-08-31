@@ -23,6 +23,7 @@ import {
   Trash2,
   ListTodo,
   Activity,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useProjectsStore } from '@/stores/projects';
@@ -30,6 +31,8 @@ import { useTasksStore } from '@/stores/tasks';
 import { useFocusStore, formatRemaining } from '@/stores/focus';
 import { cn } from '@/lib/utils';
 import { ThemePicker } from '@/components/ThemePicker';
+import { Logo } from '@/components/Logo';
+import { useEffectsStore } from '@/stores/effects';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from 'next-themes';
@@ -54,6 +57,8 @@ export function Sidebar() {
   const { currentView, setCurrentView, setCurrentProject, overdueTasks, fetchOverdue } =
     useTasksStore();
   const { theme, setTheme } = useTheme();
+  const effectsEnabled = useEffectsStore((s) => s.enabled);
+  const toggleEffects = useEffectsStore((s) => s.toggle);
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -126,9 +131,7 @@ export function Sidebar() {
     <>
       <aside className="flex h-full w-60 flex-col border-r bg-card">
         <div className="flex items-center gap-2 px-4 py-3 border-b">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            TT
-          </div>
+          <Logo size={32} />
           <span className="font-semibold text-sm">TaskFlow</span>
         </div>
 
@@ -359,6 +362,17 @@ export function Sidebar() {
 
         <div className="border-t p-2 space-y-1">
           <ThemePicker />
+          <button
+            type="button"
+            onClick={toggleEffects}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="flex-1 text-left">Эффекты</span>
+            <span className="text-[10px] text-muted-foreground">
+              {effectsEnabled ? 'Вкл' : 'Выкл'}
+            </span>
+          </button>
 
           <button
             onClick={() => setShowSettings(!showSettings)}
@@ -386,11 +400,18 @@ export function Sidebar() {
             </div>
           )}
           <button
+            onClick={() => handleViewClick('profile')}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+          >
+            <Logo size={18} />
+            <span className="truncate flex-1 text-left">{user?.name || 'Профиль'}</span>
+          </button>
+          <button
             onClick={logout}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent text-muted-foreground"
           >
             <LogOut className="h-4 w-4" />
-            {user?.name || 'Выйти'}
+            Выйти
           </button>
         </div>
       </aside>

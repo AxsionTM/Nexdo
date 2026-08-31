@@ -191,3 +191,44 @@ html.theme-violet body {
     radial-gradient(ellipse at 20% 90%, rgba(192, 132, 252, 0.1), transparent 50%);
   background-attachment: fixed;
 }
+
+/* Effects */
+.tf-star {
+  animation-name: tf-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  opacity: 0.35;
+}
+@keyframes tf-drift {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.25; }
+  50% { transform: translateY(-18px) translateX(8px); opacity: 0.85; }
+}
+.tf-glow-border {
+  position: relative;
+}
+.tf-glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.7),
+    transparent,
+    hsl(var(--primary) / 0.5),
+    transparent
+  );
+  background-size: 300% 100%;
+  animation: tf-snake 6s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes tf-snake {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 300% 0%; }
+}

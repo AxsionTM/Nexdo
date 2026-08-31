@@ -122,15 +122,9 @@ export function EisenhowerMatrix() {
   const { tasks, todayTasks, overdueTasks, currentView } = useTasksStore();
 
   const allTasks = useMemo(() => {
-    let list =
-      currentView === 'today'
-        ? (() => {
-            const ids = new Set(todayTasks.map((t) => t.id));
-            return [...overdueTasks.filter((t) => !ids.has(t.id)), ...todayTasks];
-          })()
-        : tasks;
-
-    return list.filter((t) => t.status !== 'COMPLETED');
+    if (currentView === 'today') return todayTasks;
+    if (currentView === 'overdue') return overdueTasks;
+    return tasks;
   }, [currentView, tasks, todayTasks, overdueTasks]);
 
   const grouped = useMemo(() => {
