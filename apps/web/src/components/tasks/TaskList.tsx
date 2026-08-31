@@ -11,6 +11,7 @@ import { EisenhowerMatrix } from '@/components/views/EisenhowerMatrix';
 import { HabitsView } from '@/components/habits/HabitsView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FocusView } from '@/components/focus/FocusView';
+import { TrashView } from '@/components/tasks/TrashView';
 import { Loader2, List, Columns3, CalendarDays, Grid2x2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +51,8 @@ export function TaskList() {
     if (
       currentView !== 'habits' &&
       currentView !== 'goals' &&
-      currentView !== 'focus'
+      currentView !== 'focus' &&
+      currentView !== 'trash'
     ) {
       refreshCurrentView();
     }
@@ -59,6 +61,7 @@ export function TaskList() {
   if (currentView === 'habits') return <HabitsView />;
   if (currentView === 'goals') return <GoalsView />;
   if (currentView === 'focus') return <FocusView />;
+  if (currentView === 'trash') return <TrashView />;
 
   const displayTasks =
     currentView === 'today'

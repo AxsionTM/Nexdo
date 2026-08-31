@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Download,
   X,
+  Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useProjectsStore } from '@/stores/projects';
@@ -273,6 +274,18 @@ export function Sidebar() {
             >
               <Timer className="h-4 w-4" />
               Фокус
+            </button>
+            <button
+              onClick={() => handleViewClick('trash')}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                currentView === 'trash'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-foreground hover:bg-accent'
+              )}
+            >
+              <Trash2 className="h-4 w-4" />
+              Корзина
             </button>
           </div>
         </nav>

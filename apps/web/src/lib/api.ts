@@ -123,6 +123,31 @@ class ApiClient {
     return this.request<{ tag: any }>('/tags', { method: 'POST', body: JSON.stringify(data) });
   }
 
+
+  getTrash() {
+    return this.request<{ tasks: any[] }>('/tasks/trash/list');
+  }
+
+  restoreTask(id: string) {
+    return this.request<{ task: any }>(`/tasks/${id}/restore`, { method: 'POST' });
+  }
+
+  permanentDeleteTask(id: string) {
+    return this.request<{ success: boolean }>(`/tasks/${id}/permanent`, { method: 'DELETE' });
+  }
+
+  emptyTrash() {
+    return this.request<{ success: boolean }>('/tasks/trash/empty', { method: 'POST' });
+  }
+
+  archiveTask(id: string) {
+    return this.request<{ task: any }>(`/tasks/${id}/archive`, { method: 'POST' });
+  }
+
+  unarchiveTask(id: string) {
+    return this.request<{ task: any }>(`/tasks/${id}/unarchive`, { method: 'POST' });
+  }
+
   // Habits
   getHabits() {
     return this.request<{ habits: any[] }>('/habits');

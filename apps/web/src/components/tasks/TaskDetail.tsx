@@ -13,6 +13,8 @@ import {
   Loader2,
   Sparkles,
   ListTree,
+  Archive,
+  Repeat,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTasksStore } from '@/stores/tasks';
@@ -44,6 +46,8 @@ export function TaskDetail() {
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('NONE');
+  const [showRecurrenceMenu, setShowRecurrenceMenu] = useState(false);
   const [tags, setTags] = useState<any[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -65,6 +69,7 @@ export function TaskDetail() {
       setDueDate(t.dueDate ? t.dueDate.slice(0, 10) : '');
       setProjectId(t.projectId || '');
       setSelectedTagIds(t.tags?.map((tt: any) => tt.tag.id) || []);
+      setRecurrenceType(t.recurrenceType || 'NONE');
     } catch {
       setSelectedTask(null);
     } finally {
@@ -571,6 +576,54 @@ export function TaskDetail() {
           </div>
 
 
+
+          {/* Recurrence */}
+          <div className="px-4 space-y-1 border-t py-3">
+            <div className="relative">
+              <button
+                onClick={() => setShowRecurrenceMenu(!showRecurrenceMenu)}
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-accent"
+              >
+                <Repeat className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Повтор</span>
+                <span className="ml-auto text-sm">
+                  {{
+                    NONE: 'Нет',
+                    DAILY: 'Ежедневно',
+                    WEEKLY: 'Еженедельно',
+                    MONTHLY: 'Ежемесячно',
+                    YEARLY: 'Ежегодно',
+                  }[recurrenceType] || 'Нет'}
+                </span>
+              </button>
+              {showRecurrenceMenu && (
+                <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-md border bg-card shadow-lg py-1">
+                  {[
+                    { value: 'NONE', label: 'Нет' },
+                    { value: 'DAILY', label: 'Ежедневно' },
+                    { value: 'WEEKLY', label: 'Еженедельно' },
+                    { value: 'MONTHLY', label: 'Ежемесячно' },
+                    { value: 'YEARLY', label: 'Ежегодно' },
+                  ].map((r) => (
+                    <button
+                      key={r.value}
+                      onClick={() => {
+                        setRecurrenceType(r.value);
+                        setShowRecurrenceMenu(false);
+                        save({ recurrenceType: r.value });
+                      }}
+                      className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm hover:bg-accent ${
+                        recurrenceType === r.value ? 'bg-accent' : ''
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* AI */}
           <div className="px-4 py-3 border-t">
             <div className="flex items-center gap-2 mb-2">
@@ -601,8 +654,22 @@ export function TaskDetail() {
             </div>
           </div>
 
-          {/* Delete */}
-          <div className="px-4 py-4 border-t">
+          {/* Delete / Archive */}
+          <div className="px-4 py-4 border-t space-y-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={async () => {
+                if (!selectedTaskId) return;
+                await api.archiveTask(selectedTaskId);
+                setSelectedTask(null);
+                await useTasksStore.getState().refreshCurrentView();
+              }}
+            >
+              <Archive className="h-4 w-4" />
+              Архивировать
+            </Button>
             <Button
               variant="ghost"
               size="sm"

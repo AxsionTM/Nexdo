@@ -17,6 +17,8 @@ const createTaskSchema = z.object({
   parentId: z.string().optional().nullable(),
   isAllDay: z.boolean().optional(),
   status: z.enum(['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  recurrenceType: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM']).optional(),
+  recurrenceRule: z.string().optional().nullable(),
   tagIds: z.array(z.string()).optional(),
   checklist: z
     .array(z.object({ title: z.string(), isCompleted: z.boolean().optional() }))
@@ -171,6 +173,104 @@ router.get('/overdue', async (req: AuthRequest, res, next) => {
   }
 });
 
+
+// --- Trash & Archive (before /:id to avoid param capture) ---
+
+router.get('/trash/list', async (req: AuthRequest, res, next) => {
+  try {
+    const tasks = await prisma.task.findMany({
+      where: { creatorId: req.userId, isDeleted: true },
+      include: {
+        project: { select: { id: true, name: true, color: true } },
+        tags: { include: { tag: true } },
+      },
+      orderBy: { deletedAt: 'desc' },
+      take: 100,
+    });
+    res.json({ tasks });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/trash/empty', async (req: AuthRequest, res, next) => {
+  try {
+    await prisma.task.deleteMany({
+      where: { creatorId: req.userId, isDeleted: true },
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/restore', async (req: AuthRequest, res, next) => {
+  try {
+    const existing = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: true },
+    });
+    if (!existing) throw new AppError(404, 'Задача не найдена в корзине');
+
+    const task = await prisma.task.update({
+      where: { id: req.params.id },
+      data: { isDeleted: false, deletedAt: null },
+      include: {
+        tags: { include: { tag: true } },
+        checklist: true,
+        project: { select: { id: true, name: true, color: true } },
+      },
+    });
+    res.json({ task });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/:id/permanent', async (req: AuthRequest, res, next) => {
+  try {
+    const existing = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId },
+    });
+    if (!existing) throw new AppError(404, 'Задача не найдена');
+    await prisma.task.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/archive', async (req: AuthRequest, res, next) => {
+  try {
+    const existing = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+    });
+    if (!existing) throw new AppError(404, 'Задача не найдена');
+    const task = await prisma.task.update({
+      where: { id: req.params.id },
+      data: { isArchived: true },
+    });
+    res.json({ task });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/unarchive', async (req: AuthRequest, res, next) => {
+  try {
+    const existing = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId },
+    });
+    if (!existing) throw new AppError(404, 'Задача не найдена');
+    const task = await prisma.task.update({
+      where: { id: req.params.id },
+      data: { isArchived: false },
+    });
+    res.json({ task });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/:id', async (req: AuthRequest, res, next) => {
   try {
     const task = await prisma.task.findFirst({
@@ -223,6 +323,8 @@ router.post('/', async (req: AuthRequest, res, next) => {
         parentId: data.parentId,
         isAllDay: data.isAllDay ?? true,
         status: data.status || 'TODO',
+        recurrenceType: data.recurrenceType || 'NONE',
+        recurrenceRule: data.recurrenceRule,
         creatorId: req.userId!,
         tags: data.tagIds
           ? { create: data.tagIds.map((tagId) => ({ tagId })) }
