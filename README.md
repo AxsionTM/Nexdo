@@ -4,43 +4,44 @@
 
 ## Возможности
 
-- Задачи с подзадачами, приоритетами, сроками, тегами и чек-листами
-- Проекты и разделы
-- Умные списки: Сегодня, Завтра, Просроченные
-- Привычки с трекингом
-- Цели и прогресс
-- Pomodoro / Фокус-режим
-- Тёмная и светлая тема
+- Задачи: подзадачи, приоритеты, сроки, теги, чек-листы, описание
+- Представления: список, канбан, календарь (день/неделя/месяц), матрица Эйзенхауэра
+- Проекты и умные списки (Сегодня, Завтра, Неделя, Просроченные)
+- Привычки с трекингом, streak и heatmap
+- Цели с прогресс-барами
+- Pomodoro-таймер и статистика фокуса
+- AI: разбиение задачи на подзадачи, определение приоритета
+- Глобальный поиск (⌘K)
+- Экспорт в JSON и CSV
+- Тёмная / светлая тема
+- PWA (оффлайн-кэш)
 - Русскоязычный интерфейс
 
 ## Стек
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Zustand
-- **Backend**: Node.js (Express), Prisma, PostgreSQL, Redis
-- **AI**: FastAPI (Python)
-- **Инфраструктура**: Docker Compose, Nginx, MinIO
+- Frontend: Next.js 14, TypeScript, Tailwind CSS, Zustand
+- Backend: Node.js (Express), Prisma, PostgreSQL, Redis
+- AI: FastAPI (Python)
+- Инфраструктура: Docker Compose, Nginx, MinIO
 
 ## Быстрый старт
 
 ### Требования
 
 - Docker и Docker Compose
-- Node.js 20+ (для локальной разработки)
-- Python 3.12+ (для AI-сервиса)
+- Node.js 20+
+- Python 3.12+ (для AI, опционально)
 
-### Запуск через Docker
+### Запуск
 
 ```bash
+# Инфраструктура
 docker compose up -d postgres redis minio
-```
 
-Затем в отдельных терминалах:
-
-```bash
 # API
 cd apps/api
-cp .env.example .env
 npm install
+npx prisma generate
 npx prisma migrate dev --name init
 npm run dev
 
@@ -55,13 +56,9 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Откройте http://localhost:3000
+Сайт: http://localhost:3000
 
-### Переменные окружения
-
-См. `apps/api/.env.example`
-
-## Структура проекта
+## Структура
 
 ```
 ticktick-clone/
@@ -74,22 +71,21 @@ ticktick-clone/
 └── README.md
 ```
 
-## API
-
-Базовый URL: `http://localhost:3001`
+## API (основные эндпоинты)
 
 | Метод | Путь | Описание |
 |-------|------|----------|
 | POST | /auth/register | Регистрация |
 | POST | /auth/login | Вход |
-| GET | /auth/me | Текущий пользователь |
-| GET | /tasks | Список задач |
-| POST | /tasks | Создать задачу |
-| PATCH | /tasks/:id | Обновить задачу |
-| DELETE | /tasks/:id | Удалить задачу |
-| GET | /projects | Список проектов |
-| GET | /habits | Список привычек |
-| GET | /goals | Список целей |
+| GET/POST | /tasks | Задачи |
+| GET/POST | /projects | Проекты |
+| GET/POST | /habits | Привычки |
+| GET/POST | /goals | Цели |
+| GET/POST | /focus/sessions | Фокус-сессии |
+| POST | /ai/breakdown | AI: подзадачи |
+| POST | /ai/priority | AI: приоритет |
+| GET | /export/json | Экспорт JSON |
+| GET | /export/csv | Экспорт CSV |
 
 ## Лицензия
 

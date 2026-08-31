@@ -11,6 +11,8 @@ import {
   Check,
   ChevronRight,
   Loader2,
+  Sparkles,
+  ListTree,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTasksStore } from '@/stores/tasks';
@@ -185,6 +187,115 @@ export function TaskDetail() {
       : [...selectedTagIds, tagId];
     setSelectedTagIds(next);
     save({ tagIds: next });
+  };
+
+
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const localBreakdown = (title: string, description?: string | null) => {
+    const words = `${title} ${description || ''}`.trim().split(/\s+/).filter(Boolean);
+    if (words.length <= 3) {
+      return [
+        { title: `Начать: ${title}`, priority: 'HIGH' },
+        { title: `Завершить: ${title}`, priority: 'MEDIUM' },
+      ];
+    }
+    return [
+      { title: `Исследовать: ${title}`, priority: 'MEDIUM' },
+      { title: `Спланировать: ${title}`, priority: 'HIGH' },
+      { title: `Выполнить: ${title}`, priority: 'HIGH' },
+      { title: `Проверить результат: ${title}`, priority: 'LOW' },
+    ];
+  };
+
+  const localPriority = (title: string, description?: string | null) => {
+    const t = `${title} ${description || ''}`.toLowerCase();
+    if (['срочно', 'asap', 'сегодня', 'критично', 'важно', 'дедлайн'].some((k) => t.includes(k))) {
+      return 'HIGH';
+    }
+    if (['нужно', 'должен', 'необходимо'].some((k) => t.includes(k))) {
+      return 'MEDIUM';
+    }
+    return 'LOW';
+  };
+
+  const handleAiBreakdown = async () => {
+    if (!selectedTaskId || !task || aiLoading) return;
+    setAiLoading(true);
+    try {
+      let subtasks: { title: string; priority?: string }[] = [];
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai/breakdown`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${api.getToken()}`,
+            },
+            body: JSON.stringify({ title: task.title, description: task.description }),
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          subtasks = data.subtasks || [];
+        }
+      } catch {
+        /* network — use local */
+      }
+      if (!subtasks.length) {
+        subtasks = localBreakdown(task.title, task.description);
+      }
+      for (const sub of subtasks) {
+        await createTask({
+          title: sub.title,
+          parentId: selectedTaskId,
+          priority: sub.priority || 'NONE',
+          projectId: task.projectId || undefined,
+        });
+      }
+      await loadTask();
+    } catch (e: any) {
+      alert(e.message || 'Не удалось создать подзадачи');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAiPriority = async () => {
+    if (!selectedTaskId || !task || aiLoading) return;
+    setAiLoading(true);
+    try {
+      let nextPriority: string | null = null;
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai/priority`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${api.getToken()}`,
+            },
+            body: JSON.stringify({ title: task.title, description: task.description }),
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          nextPriority = data.priority || null;
+        }
+      } catch {
+        /* network — use local */
+      }
+      if (!nextPriority) {
+        nextPriority = localPriority(task.title, task.description);
+      }
+      setPriority(nextPriority);
+      await save({ priority: nextPriority });
+    } catch (e: any) {
+      alert(e.message || 'Не удалось обновить приоритет');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   if (!selectedTaskId) return null;
@@ -456,6 +567,37 @@ export function TaskDetail() {
                 placeholder="Добавить подзадачу..."
                 className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground/60"
               />
+            </div>
+          </div>
+
+
+          {/* AI */}
+          <div className="px-4 py-3 border-t">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">AI-помощник</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-start gap-2 text-xs h-8"
+                onClick={handleAiBreakdown}
+                disabled={aiLoading}
+              >
+                <ListTree className="h-3.5 w-3.5" />
+                {aiLoading ? 'Обработка...' : 'Разбить на подзадачи'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-start gap-2 text-xs h-8"
+                onClick={handleAiPriority}
+                disabled={aiLoading}
+              >
+                <Flag className="h-3.5 w-3.5" />
+                {aiLoading ? 'Обработка...' : 'Определить приоритет'}
+              </Button>
             </div>
           </div>
 
