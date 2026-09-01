@@ -50,6 +50,7 @@ export function TaskDetail() {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('NONE');
+  const [remindMinutes, setRemindMinutes] = useState<number | null>(null);
   const [showRecurrenceMenu, setShowRecurrenceMenu] = useState(false);
   const [tags, setTags] = useState<any[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -76,6 +77,13 @@ export function TaskDetail() {
       setProjectId(t.projectId || '');
       setSelectedTagIds(t.tags?.map((tt: any) => tt.tag.id) || []);
       setRecurrenceType(t.recurrenceType || 'NONE');
+      if (t.reminders?.length && t.dueDate) {
+        const rem = t.reminders[0];
+        const diff = Math.round((new Date(t.dueDate).getTime() - new Date(rem.remindAt).getTime()) / 60000);
+        setRemindMinutes(diff >= 0 ? diff : 0);
+      } else {
+        setRemindMinutes(null);
+      }
     } catch {
       setSelectedTask(null);
     } finally {
@@ -698,7 +706,50 @@ const handleDueDateChange = (value: string) => {
           </div>
 
           {/* AI */}
+          
+          {/* Reminder */}
           <div className="px-4 py-3 border-t">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-sm text-muted-foreground">Напоминание</span>
+            </div>
+            <select
+              className="w-full h-9 rounded-md border border-input bg-card px-2 text-sm disabled:opacity-40"
+              value={remindMinutes === null ? '' : String(remindMinutes)}
+              disabled={!dueDate}
+              onChange={async (e) => {
+                const v = e.target.value;
+                const mins = v === '' ? null : Number(v);
+                setRemindMinutes(mins);
+                if (!selectedTaskId) return;
+                if (!dueDate) return;
+                try {
+                  await api.setTaskReminder(selectedTaskId, mins);
+                } catch (err: any) {
+                  alert(err.message || 'Не удалось сохранить напоминание');
+                }
+              }}
+            >
+              <option value="">Нет</option>
+              <option value="0">В момент срока</option>
+              <option value="5">За 5 минут</option>
+              <option value="15">За 15 минут</option>
+              <option value="30">За 30 минут</option>
+              <option value="60">За 1 час</option>
+              <option value="1440">За 1 день</option>
+            </select>
+            {!dueDate && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Сначала укажите дату окончания (срок).
+              </p>
+            )}
+            {dueDate && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Нужно разрешение уведомлений в браузере. Проверка каждые 30 сек.
+              </p>
+            )}
+          </div>
+
+<div className="px-4 py-3 border-t">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">AI-помощник</span>

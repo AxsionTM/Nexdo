@@ -43,6 +43,8 @@ export function CreateTaskModal({ open, onClose }: Props) {
   const [tags, setTags] = useState<any[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [recurrenceType, setRecurrenceType] = useState('NONE');
+  const [remindMinutes, setRemindMinutes] = useState<number | ''>('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -64,6 +66,8 @@ export function CreateTaskModal({ open, onClose }: Props) {
     setDueTime('');
     setSelectedTagIds([]);
     setNewTag('');
+    setRecurrenceType('NONE');
+    setRemindMinutes('');
     setError('');
   };
 
@@ -108,6 +112,8 @@ export function CreateTaskModal({ open, onClose }: Props) {
       };
       if (startIso) data.startDate = startIso;
       if (dueIso) data.dueDate = dueIso;
+      if (recurrenceType && recurrenceType !== 'NONE') data.recurrenceType = recurrenceType;
+      if (dueIso && remindMinutes !== '') data.remindMinutes = Number(remindMinutes);
       // If only start given, also set due to same day end feel optional - leave as is
 
       await createTask(data);
@@ -304,6 +310,44 @@ export function CreateTaskModal({ open, onClose }: Props) {
               <Button type="button" size="sm" variant="outline" className="h-8" onClick={addTag}>
                 +
               </Button>
+            </div>
+          </div>
+
+          
+          {/* Recurrence + reminder */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] text-muted-foreground">Повтор</label>
+              <select
+                value={recurrenceType}
+                onChange={(e) => setRecurrenceType(e.target.value)}
+                className="mt-0.5 flex h-9 w-full rounded-md border border-input bg-card px-2 text-sm"
+              >
+                <option value="NONE">Не повторять</option>
+                <option value="DAILY">Каждый день</option>
+                <option value="WEEKLY">Каждую неделю</option>
+                <option value="MONTHLY">Каждый месяц</option>
+                <option value="YEARLY">Каждый год</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Напоминание</label>
+              <select
+                value={remindMinutes === '' ? '' : String(remindMinutes)}
+                onChange={(e) =>
+                  setRemindMinutes(e.target.value === '' ? '' : Number(e.target.value))
+                }
+                disabled={!dueDate}
+                className="mt-0.5 flex h-9 w-full rounded-md border border-input bg-card px-2 text-sm disabled:opacity-40"
+              >
+                <option value="">Нет</option>
+                <option value="0">В момент срока</option>
+                <option value="5">За 5 минут</option>
+                <option value="15">За 15 минут</option>
+                <option value="30">За 30 минут</option>
+                <option value="60">За 1 час</option>
+                <option value="1440">За 1 день</option>
+              </select>
             </div>
           </div>
 

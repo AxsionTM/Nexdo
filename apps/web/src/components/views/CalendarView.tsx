@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type DragEvent } from 'react';
 import {
   format,
   startOfMonth,
@@ -27,7 +27,8 @@ import { Button } from '@/components/ui/button';
 type CalMode = 'month' | 'week' | 'day';
 
 export function CalendarView() {
-  const { tasks, todayTasks, overdueTasks, currentView, setSelectedTask } = useTasksStore();
+  const { tasks, todayTasks, overdueTasks, currentView, setSelectedTask, updateTask } = useTasksStore();
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [mode, setMode] = useState<CalMode>('month');
   const [cursor, setCursor] = useState(new Date());
 
@@ -36,6 +37,31 @@ export function CalendarView() {
     if (currentView === 'overdue') return overdueTasks;
     return tasks;
   }, [currentView, tasks, todayTasks, overdueTasks]);
+
+  const moveTaskToDate = async (taskId: string, dateKey: string) => {
+    const day = new Date(dateKey + 'T12:00:00');
+    await updateTask(taskId, { dueDate: day.toISOString(), isAllDay: true });
+  };
+
+  const onDragStart = (e: DragEvent, taskId: string) => {
+    e.dataTransfer.setData('text/task-id', taskId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOverDay = (e: DragEvent, key: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverKey(key);
+  };
+
+  const onDropDay = async (e: DragEvent, key: string) => {
+    e.preventDefault();
+    setDragOverKey(null);
+    const taskId = e.dataTransfer.getData('text/task-id');
+    if (!taskId) return;
+    await moveTaskToDate(taskId, key);
+  };
+
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -96,6 +122,9 @@ export function CalendarView() {
             Сегодня
           </Button>
           <h2 className="text-sm font-semibold capitalize ml-2">{headerLabel}</h2>
+          <span className="text-[11px] text-muted-foreground hidden sm:inline ml-2">
+            Перетащите задачу на другой день
+          </span>
         </div>
 
         <div className="flex rounded-lg border overflow-hidden">
@@ -133,10 +162,14 @@ export function CalendarView() {
               return (
                 <div
                   key={key}
+                  onDragOver={(e) => onDragOverDay(e, key)}
+                  onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
+                  onDrop={(e) => onDropDay(e, key)}
                   className={cn(
                     'min-h-[90px] border rounded-md p-1.5 transition-colors',
                     !inMonth && 'opacity-40 bg-muted/20',
-                    isToday(day) && 'bg-primary/5 border-primary/30'
+                    isToday(day) && 'bg-primary/5 border-primary/30',
+                    dragOverKey === key && 'ring-2 ring-primary bg-primary/10'
                   )}
                 >
                   <div
@@ -151,9 +184,11 @@ export function CalendarView() {
                     {dayTasks.slice(0, 3).map((task) => (
                       <button
                         key={task.id}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, task.id)}
                         onClick={() => setSelectedTask(task.id)}
                         className={cn(
-                          'w-full text-left text-[11px] px-1 py-0.5 rounded truncate',
+                          'w-full text-left text-[11px] px-1 py-0.5 rounded truncate cursor-grab active:cursor-grabbing',
                           'hover:opacity-80',
                           task.status === 'COMPLETED'
                             ? 'line-through text-muted-foreground bg-muted'
@@ -193,9 +228,13 @@ export function CalendarView() {
               return (
                 <div
                   key={key}
+                  onDragOver={(e) => onDragOverDay(e, key)}
+                  onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
+                  onDrop={(e) => onDropDay(e, key)}
                   className={cn(
                     'flex flex-col border rounded-lg overflow-hidden',
-                    isToday(day) && 'border-primary/40 bg-primary/5'
+                    isToday(day) && 'border-primary/40 bg-primary/5',
+                    dragOverKey === key && 'ring-2 ring-primary'
                   )}
                 >
                   <div className="px-2 py-2 border-b text-center">
@@ -215,9 +254,11 @@ export function CalendarView() {
                     {dayTasks.map((task) => (
                       <button
                         key={task.id}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, task.id)}
                         onClick={() => setSelectedTask(task.id)}
                         className={cn(
-                          'w-full text-left text-xs px-2 py-1.5 rounded-md',
+                          'w-full text-left text-xs px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing',
                           task.status === 'COMPLETED'
                             ? 'line-through text-muted-foreground bg-muted'
                             : 'bg-card border hover:bg-accent'

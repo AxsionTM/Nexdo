@@ -10,6 +10,8 @@ import { NotificationPrompt } from '@/components/NotificationPrompt';
 import { FocusTicker } from '@/components/focus/FocusTicker';
 import { EffectsLayer } from '@/components/EffectsLayer';
 import { OnboardingTour } from '@/components/OnboardingTour';
+import { GlobalQuickAdd } from '@/components/GlobalQuickAdd';
+import { ReminderWorker } from '@/components/ReminderWorker';
 import { Loader2 } from 'lucide-react';
 
 export default function AppPage() {
@@ -45,6 +47,8 @@ export default function AppPage() {
       <FocusTicker />
       <EffectsLayer />
       <OnboardingTour />
+      <GlobalQuickAdd />
+      <ReminderWorker />
     </div>
   );
 }

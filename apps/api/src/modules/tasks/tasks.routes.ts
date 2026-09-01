@@ -19,6 +19,7 @@ const createTaskSchema = z.object({
   status: z.enum(['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
   recurrenceType: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM']).optional(),
   recurrenceRule: z.string().optional().nullable(),
+  remindMinutes: z.number().int().optional().nullable(),
   tagIds: z.array(z.string()).optional(),
   checklist: z
     .array(z.object({ title: z.string(), isCompleted: z.boolean().optional() }))
@@ -279,6 +280,46 @@ router.post('/:id/unarchive', async (req: AuthRequest, res, next) => {
   }
 });
 
+
+// Pending reminders — must be before /:id
+router.get('/reminders/pending', async (req: AuthRequest, res, next) => {
+  try {
+    const now = new Date();
+    const windowEnd = new Date(now.getTime() + 120 * 1000);
+    const reminders = await prisma.reminder.findMany({
+      where: {
+        isSent: false,
+        remindAt: { lte: windowEnd },
+        task: {
+          creatorId: req.userId,
+          isDeleted: false,
+          status: { not: 'COMPLETED' },
+        },
+      },
+      include: {
+        task: { select: { id: true, title: true, dueDate: true, priority: true } },
+      },
+      take: 30,
+    });
+    res.json({ reminders });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/reminders/:id/sent', async (req: AuthRequest, res, next) => {
+  try {
+    const rem = await prisma.reminder.findFirst({
+      where: { id: req.params.id, task: { creatorId: req.userId } },
+    });
+    if (!rem) throw new AppError(404, 'Напоминание не найдено');
+    await prisma.reminder.update({ where: { id: rem.id }, data: { isSent: true } });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/:id', async (req: AuthRequest, res, next) => {
   try {
     const task = await prisma.task.findFirst({
@@ -355,6 +396,15 @@ router.post('/', async (req: AuthRequest, res, next) => {
         _count: { select: { children: true } },
       },
     });
+
+    // Browser/server reminder relative to dueDate
+    if (data.dueDate && data.remindMinutes != null && data.remindMinutes >= 0) {
+      const due = new Date(data.dueDate);
+      const remindAt = new Date(due.getTime() - data.remindMinutes * 60 * 1000);
+      await prisma.reminder.create({
+        data: { taskId: task.id, remindAt },
+      });
+    }
 
     const io = req.app.get('io');
     if (io) {
@@ -433,6 +483,34 @@ router.patch('/:id', async (req: AuthRequest, res, next) => {
   }
 });
 
+
+// Set/replace reminder for a task (minutes before dueDate; 0 = at due)
+router.put('/:id/reminder', async (req: AuthRequest, res, next) => {
+  try {
+    const task = await prisma.task.findFirst({
+      where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+    });
+    if (!task) throw new AppError(404, 'Задача не найдена');
+    if (!task.dueDate) throw new AppError(400, 'Сначала укажите срок задачи');
+
+    const minutes = z.number().int().min(0).nullable().optional().parse(req.body.remindMinutes);
+    
+    await prisma.reminder.deleteMany({ where: { taskId: task.id } });
+
+    if (minutes == null) {
+      return res.json({ success: true, reminder: null });
+    }
+
+    const remindAt = new Date(task.dueDate.getTime() - minutes * 60 * 1000);
+    const reminder = await prisma.reminder.create({
+      data: { taskId: task.id, remindAt, isSent: false },
+    });
+    res.json({ success: true, reminder });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete('/:id', async (req: AuthRequest, res, next) => {
   try {
     const existing = await prisma.task.findFirst({
@@ -459,10 +537,33 @@ router.delete('/:id', async (req: AuthRequest, res, next) => {
   }
 });
 
+function shiftDate(date: Date | null, type: string): Date | null {
+  if (!date) return null;
+  const d = new Date(date);
+  switch (type) {
+    case 'DAILY':
+      d.setDate(d.getDate() + 1);
+      break;
+    case 'WEEKLY':
+      d.setDate(d.getDate() + 7);
+      break;
+    case 'MONTHLY':
+      d.setMonth(d.getMonth() + 1);
+      break;
+    case 'YEARLY':
+      d.setFullYear(d.getFullYear() + 1);
+      break;
+    default:
+      return null;
+  }
+  return d;
+}
+
 router.post('/:id/complete', async (req: AuthRequest, res, next) => {
   try {
     const existing = await prisma.task.findFirst({
       where: { id: req.params.id, creatorId: req.userId, isDeleted: false },
+      include: { tags: true, checklist: true },
     });
 
     if (!existing) {
@@ -484,6 +585,52 @@ router.post('/:id/complete', async (req: AuthRequest, res, next) => {
         project: { select: { id: true, name: true, color: true } },
       },
     });
+
+    // Spawn next occurrence when completing a recurring task
+    if (
+      newStatus === 'COMPLETED' &&
+      existing.recurrenceType &&
+      existing.recurrenceType !== 'NONE'
+    ) {
+      const nextDue = shiftDate(existing.dueDate, existing.recurrenceType);
+      const nextStart = shiftDate(existing.startDate, existing.recurrenceType);
+      if (nextDue || nextStart || existing.recurrenceType === 'DAILY') {
+        const next = await prisma.task.create({
+          data: {
+            title: existing.title,
+            description: existing.description,
+            priority: existing.priority,
+            dueDate: nextDue,
+            startDate: nextStart,
+            isAllDay: existing.isAllDay,
+            projectId: existing.projectId,
+            sectionId: existing.sectionId,
+            creatorId: existing.creatorId,
+            recurrenceType: existing.recurrenceType,
+            recurrenceRule: existing.recurrenceRule,
+            status: 'TODO',
+            tags:
+              existing.tags.length > 0
+                ? { create: existing.tags.map((t) => ({ tagId: t.tagId })) }
+                : undefined,
+            checklist:
+              existing.checklist.length > 0
+                ? {
+                    create: existing.checklist.map((c, i) => ({
+                      title: c.title,
+                      isCompleted: false,
+                      sortOrder: i,
+                    })),
+                  }
+                : undefined,
+          },
+        });
+        const io2 = req.app.get('io');
+        if (io2) {
+          io2.to(`user:${req.userId}`).emit('task:created', next);
+        }
+      }
+    }
 
     const io = req.app.get('io');
     if (io) {

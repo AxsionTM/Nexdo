@@ -71,6 +71,21 @@ class ApiClient {
     return this.request<{ task: any }>(`/tasks/${id}`);
   }
 
+  getPendingReminders() {
+    return this.request<{ reminders: any[] }>('/tasks/reminders/pending');
+  }
+
+  markReminderSent(id: string) {
+    return this.request<{ success: boolean }>(`/tasks/reminders/${id}/sent`, { method: 'POST' });
+  }
+
+  setTaskReminder(taskId: string, remindMinutes: number | null) {
+    return this.request<{ success: boolean; reminder: any }>(`/tasks/${taskId}/reminder`, {
+      method: 'PUT',
+      body: JSON.stringify({ remindMinutes }),
+    });
+  }
+
   createTask(data: any) {
     return this.request<{ task: any }>('/tasks', { method: 'POST', body: JSON.stringify(data) });
   }
