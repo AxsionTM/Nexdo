@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { useAuthStore } from '@/stores/auth';
-import { useTasksStore } from '@/stores/tasks';
-import { useGoalsStore } from '@/stores/goals';
-import { useProjectsStore } from '@/stores/projects';
-import { useFocusStore } from '@/stores/focus';
-import { useEffectsStore } from '@/stores/effects';
-import { ThemePicker } from '@/components/ThemePicker';
-import { Logo } from '@/components/Logo';
-import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { useEffect, useMemo, useState } from "react";
+import { useAuthStore } from "@/stores/auth";
+import { useTasksStore } from "@/stores/tasks";
+import { useGoalsStore } from "@/stores/goals";
+import { useProjectsStore } from "@/stores/projects";
+import { useFocusStore } from "@/stores/focus";
+import { useEffectsStore } from "@/stores/effects";
+import { ThemePicker } from "@/components/ThemePicker";
+import { Logo } from "@/components/Logo";
+import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import {
   CheckCircle2,
   ListTodo,
@@ -19,7 +19,7 @@ import {
   Sparkles,
   Mail,
   Shield,
-} from 'lucide-react';
+} from "lucide-react";
 
 export function ProfileView() {
   const { user, setUser } = useAuthStore();
@@ -31,7 +31,7 @@ export function ProfileView() {
   const [completed, setCompleted] = useState(0);
 
   useEffect(() => {
-    fetchTasks({ includeCompleted: 'true' });
+    fetchTasks({ includeCompleted: "true" });
     fetchOverdue();
     fetchGoals();
     fetchProjects();
@@ -39,7 +39,7 @@ export function ProfileView() {
   }, [fetchTasks, fetchOverdue, fetchGoals, fetchProjects, fetchStats]);
 
   useEffect(() => {
-    setCompleted(tasks.filter((t) => t.status === 'COMPLETED').length);
+    setCompleted(tasks.filter((t) => t.status === "COMPLETED").length);
   }, [tasks]);
 
   const total = tasks.length;
@@ -48,10 +48,10 @@ export function ProfileView() {
     return Math.round((completed / Math.max(total, 1)) * 100);
   }, [completed, total]);
 
-  const initials = (user?.name || user?.email || 'U')
-    .split(' ')
+  const initials = (user?.name || user?.email || "U")
+    .split(" ")
     .map((p) => p[0])
-    .join('')
+    .join("")
     .slice(0, 2)
     .toUpperCase();
 
@@ -68,14 +68,20 @@ export function ProfileView() {
           <div className="h-20 w-20 rounded-2xl bg-card border-2 border-primary/40 flex items-center justify-center text-2xl font-bold shadow-lg">
             {user?.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatarUrl} alt="" className="h-full w-full rounded-2xl object-cover" />
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="h-full w-full rounded-2xl object-cover"
+              />
             ) : (
               initials
             )}
           </div>
           <div className="pb-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{user?.name || 'Пользователь'}</h1>
+              <h1 className="text-xl font-semibold">
+                {user?.name || "Пользователь"}
+              </h1>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
                 Pro
               </span>
@@ -90,18 +96,20 @@ export function ProfileView() {
       </div>
 
       <div className="p-4 md:p-6 space-y-4 max-w-5xl">
-
         {/* Birthday */}
         <div className="rounded-xl border bg-card p-4 space-y-2">
           <h2 className="text-sm font-semibold">Дата рождения</h2>
           <p className="text-xs text-muted-foreground">
-            Никак не влияет на работу приложения — только чтобы красиво выделить день в календаре.
+            Никак не влияет на работу приложения — только чтобы красиво выделить
+            день в календаре.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="date"
               className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-              defaultValue={user?.birthday ? String(user.birthday).slice(0, 10) : ''}
+              defaultValue={
+                user?.birthday ? String(user.birthday).slice(0, 10) : ""
+              }
               onChange={async (e) => {
                 const v = e.target.value || null;
                 try {
@@ -109,8 +117,8 @@ export function ProfileView() {
                   setUser?.(u);
                 } catch (err: any) {
                   alert(
-                    (err?.message || 'Не удалось сохранить') +
-                      '\nЕсли колонки birthday ещё нет: в apps/api выполните npx prisma db push'
+                    (err?.message || "Не удалось сохранить") +
+                      "\nЕсли колонки birthday ещё нет: в apps/api выполните npx prisma db push",
                   );
                 }
               }}
@@ -130,7 +138,11 @@ export function ProfileView() {
             icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
             label="Выполнено"
             value={completed}
-            sub={total ? `${Math.round((completed / total) * 100)}% завершено` : '—'}
+            sub={
+              total
+                ? `${Math.round((completed / total) * 100)}% завершено`
+                : "—"
+            }
           />
           <Stat
             icon={<FolderKanban className="h-4 w-4 text-violet-500" />}
@@ -142,7 +154,11 @@ export function ProfileView() {
             icon={<Activity className="h-4 w-4 text-amber-500" />}
             label="Продуктивность"
             value={`${productivity}%`}
-            sub={overdueTasks.length ? `Просрочено: ${overdueTasks.length}` : 'Отличный результат'}
+            sub={
+              overdueTasks.length
+                ? `Просрочено: ${overdueTasks.length}`
+                : "Отличный результат"
+            }
           />
         </div>
 
@@ -153,20 +169,29 @@ export function ProfileView() {
               <h2 className="text-sm font-semibold">Текущие цели</h2>
             </div>
             {activeGoals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Пока нет активных целей</p>
+              <p className="text-sm text-muted-foreground">
+                Пока нет активных целей
+              </p>
             ) : (
               <div className="space-y-3">
                 {activeGoals.map((g) => {
+                  const targetValue = g.targetValue ?? 0;
+                  const currentValue = g.currentValue ?? 0;
+
                   const pct =
-                    g.targetValue > 0
-                      ? Math.min(100, Math.round((g.currentValue / g.targetValue) * 100))
+                    targetValue > 0
+                      ? Math.min(
+                          100,
+                          Math.round((currentValue / targetValue) * 100),
+                        )
                       : 0;
+
                   return (
                     <div key={g.id}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="font-medium truncate">{g.name}</span>
                         <span className="text-muted-foreground tabular-nums">
-                          {g.currentValue}/{g.targetValue || '—'}
+                          {g.currentValue}/{g.targetValue || "—"}
                         </span>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -188,27 +213,31 @@ export function ProfileView() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm">Тема оформления</p>
-                <p className="text-xs text-muted-foreground">Цвета интерфейса</p>
+                <p className="text-xs text-muted-foreground">
+                  Цвета интерфейса
+                </p>
               </div>
               <ThemePicker />
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm">Эффекты</p>
-                <p className="text-xs text-muted-foreground">Частицы и свечение</p>
+                <p className="text-xs text-muted-foreground">
+                  Частицы и свечение
+                </p>
               </div>
               <button
                 type="button"
                 onClick={toggleEffects}
                 className={cn(
-                  'relative h-6 w-11 rounded-full transition-colors',
-                  effectsOn ? 'bg-primary' : 'bg-muted'
+                  "relative h-6 w-11 rounded-full transition-colors",
+                  effectsOn ? "bg-primary" : "bg-muted",
                 )}
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-                    effectsOn ? 'left-5' : 'left-0.5'
+                    "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+                    effectsOn ? "left-5" : "left-0.5",
                   )}
                 />
               </button>
@@ -226,7 +255,9 @@ export function ProfileView() {
               <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Электронная почта</p>
+                  <p className="text-xs text-muted-foreground">
+                    Электронная почта
+                  </p>
                   <p className="font-medium">{user?.email}</p>
                 </div>
               </div>
