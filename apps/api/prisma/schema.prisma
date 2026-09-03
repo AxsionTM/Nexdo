@@ -50,10 +50,12 @@ model User {
   avatarUrl     String?
   locale        String    @default("ru")
   theme         String    @default("system")
+  birthday      DateTime? // date of birth (year optional for display)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   accounts      Account[]
+  birthdays    Birthday[]
   sessions      Session[]
   projects      ProjectMember[]
   tasks         Task[]           @relation("TaskAssignee")
@@ -391,4 +393,21 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+
+model Birthday {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  date      DateTime // month/day used; year for age
+  note      String?
+  remindDays Int     @default(0) // 0 = on the day
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("birthdays")
 }

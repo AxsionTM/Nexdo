@@ -57,7 +57,17 @@ router.get('/', async (req: AuthRequest, res, next) => {
       parentId: parentId === 'null' ? null : parentId || undefined,
     };
 
-    if (projectId) where.projectId = projectId;
+    if (req.query.inbox === 'true') {
+      const inbox = await prisma.project.findFirst({
+        where: { isInbox: true, members: { some: { userId: req.userId } } },
+      });
+      where.OR = [
+        { projectId: null },
+        ...(inbox ? [{ projectId: inbox.id }] : []),
+      ];
+    } else if (projectId) {
+      where.projectId = projectId;
+    }
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (isArchived === 'true') where.isArchived = true;

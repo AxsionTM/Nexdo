@@ -723,7 +723,21 @@ const handleDueDateChange = (value: string) => {
                 if (!selectedTaskId) return;
                 if (!dueDate) return;
                 try {
-                  await api.setTaskReminder(selectedTaskId, mins);
+                  if (typeof (api as any).setTaskReminder === 'function') {
+                    await (api as any).setTaskReminder(selectedTaskId, mins);
+                  } else {
+                    await fetch(
+                      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/tasks/${selectedTaskId}/reminder`,
+                      {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('token') || localStorage.getItem('tf-token') || ''}`,
+                        },
+                        body: JSON.stringify({ remindMinutes: mins }),
+                      }
+                    );
+                  }
                 } catch (err: any) {
                   alert(err.message || 'Не удалось сохранить напоминание');
                 }

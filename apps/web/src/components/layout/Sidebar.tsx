@@ -87,7 +87,12 @@ export function Sidebar() {
     setCurrentProject(null);
   };
 
-  const handleProjectClick = (projectId: string) => {
+  const handleProjectClick = (projectId: string, isInbox?: boolean) => {
+    if (isInbox) {
+      setCurrentView('inbox');
+      setCurrentProject(null);
+      return;
+    }
     setCurrentView('project');
     setCurrentProject(projectId);
   };
@@ -232,7 +237,7 @@ export function Sidebar() {
                       )}
                     >
                       <button
-                        onClick={() => handleProjectClick(project.id)}
+                        onClick={() => handleProjectClick(project.id, project.isInbox)}
                         className="flex flex-1 items-center gap-2 px-2 py-1.5 text-sm min-w-0"
                       >
                         {project.isInbox ? (
@@ -332,6 +337,18 @@ export function Sidebar() {
                   {formatRemaining(focusRemaining)}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => handleViewClick('birthdays')}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                currentView === 'birthdays'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-foreground hover:bg-accent'
+              )}
+            >
+              <span className="text-sm">🎂</span>
+              Дни рождения
             </button>
             <button
               onClick={() => handleViewClick('pulse')}

@@ -11,7 +11,9 @@ echo "==> Installing API dependencies..."
 cd apps/api
 npm install
 npx prisma generate
-npx prisma migrate dev --name init --skip-seed || true
+# Sync the Prisma schema without allowing migration drift to reset the database.
+# `migrate dev` may reset a development database when it detects drift.
+npx prisma db push
 
 echo "==> Installing Web dependencies..."
 cd ../web

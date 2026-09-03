@@ -4,20 +4,42 @@ import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+type Providers = { google: boolean; github: boolean };
+
 export function OAuthButtons() {
-  const [providers, setProviders] = useState<{ google: boolean; github: boolean }>({
-    google: false,
-    github: false,
-  });
+  const [providers, setProviders] = useState<Providers | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     fetch(`${API_URL}/auth/providers`)
-      .then((r) => r.json())
-      .then((data) => setProviders(data.providers || { google: false, github: false }))
-      .catch(() => {});
+      .then(async (r) => {
+        if (!r.ok) throw new Error('providers request failed');
+        return r.json();
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setProviders({
+            google: !!data.providers?.google,
+            github: !!data.providers?.github,
+          });
+        }
+      })
+      .catch(() => {
+        // Keep the provider state unknown instead of falsely telling the user
+        // that .env is missing when the API is simply restarting/offline.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const anyEnabled = providers.google || providers.github;
+  const googleEnabled = providers?.google === true;
+  const githubEnabled = providers?.github === true;
+  const anyEnabled = googleEnabled || githubEnabled;
+
+  const buttonClass =
+    'flex h-9 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors';
 
   return (
     <div className="space-y-3">
@@ -32,8 +54,16 @@ export function OAuthButtons() {
 
       <div className="grid gap-2">
         <a
-          href={`${API_URL}/auth/google`}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          href={googleEnabled ? `${API_URL}/auth/google` : undefined}
+          aria-disabled={!googleEnabled}
+          onClick={(e) => {
+            if (!googleEnabled) e.preventDefault();
+          }}
+          className={`${buttonClass} ${
+            googleEnabled
+              ? 'hover:bg-accent hover:text-accent-foreground'
+              : 'cursor-not-allowed opacity-60'
+          }`}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path
@@ -54,28 +84,36 @@ export function OAuthButtons() {
             />
           </svg>
           Войти через Google
-          {!providers.google && (
-            <span className="text-[10px] text-muted-foreground">(настройте .env)</span>
+          {providers && !googleEnabled && (
+            <span className="text-[10px] text-muted-foreground">(не настроено)</span>
           )}
         </a>
 
         <a
-          href={`${API_URL}/auth/github`}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          href={githubEnabled ? `${API_URL}/auth/github` : undefined}
+          aria-disabled={!githubEnabled}
+          onClick={(e) => {
+            if (!githubEnabled) e.preventDefault();
+          }}
+          className={`${buttonClass} ${
+            githubEnabled
+              ? 'hover:bg-accent hover:text-accent-foreground'
+              : 'cursor-not-allowed opacity-60'
+          }`}
         >
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
           </svg>
           Войти через GitHub
-          {!providers.github && (
-            <span className="text-[10px] text-muted-foreground">(настройте .env)</span>
+          {providers && !githubEnabled && (
+            <span className="text-[10px] text-muted-foreground">(не настроено)</span>
           )}
         </a>
       </div>
 
-      {!anyEnabled && (
+      {providers && !anyEnabled && (
         <p className="text-[11px] text-center text-muted-foreground">
-          Для OAuth укажите CLIENT_ID и CLIENT_SECRET в apps/api/.env
+          OAuth не настроен. Для него укажите CLIENT_ID и CLIENT_SECRET в apps/api/.env.
         </p>
       )}
     </div>

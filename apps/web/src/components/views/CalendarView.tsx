@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type DragEvent } from 'react';
+import { useMemo, useState, useEffect, type DragEvent } from 'react';
 import {
   format,
   startOfMonth,
@@ -21,22 +21,32 @@ import {
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTasksStore } from '@/stores/tasks';
+import { useBirthdaysStore, isSameMonthDay, ageFromDate } from '@/stores/birthdays';
+import { useAuthStore } from '@/stores/auth';
+import { useEffectsStore } from '@/stores/effects';
 import { cn, priorityColors } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 type CalMode = 'month' | 'week' | 'day';
 
 export function CalendarView() {
-  const { tasks, todayTasks, overdueTasks, currentView, setSelectedTask, updateTask } = useTasksStore();
+  const { tasks, setSelectedTask, updateTask } = useTasksStore();
+  const { items: birthdays, fetch: fetchBirthdays } = useBirthdaysStore();
+  const user = useAuthStore((s) => s.user);
+  const effectsOn = useEffectsStore((s) => s.enabled);
+
+  useEffect(() => {
+    // Tasks are loaded by TaskList when calendar mode is selected.
+    // Do not fetch them here: fetchTasks toggles the global isLoading flag,
+    // which used to unmount CalendarView and immediately mount it again,
+    // causing an endless loading/fetch loop.
+    fetchBirthdays();
+  }, [fetchBirthdays]);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [mode, setMode] = useState<CalMode>('month');
   const [cursor, setCursor] = useState(new Date());
 
-  const allTasks = useMemo(() => {
-    if (currentView === 'today') return todayTasks;
-    if (currentView === 'overdue') return overdueTasks;
-    return tasks;
-  }, [currentView, tasks, todayTasks, overdueTasks]);
+  const allTasks = useMemo(() => tasks, [tasks]);
 
   const moveTaskToDate = async (taskId: string, dateKey: string) => {
     const day = new Date(dateKey + 'T12:00:00');
@@ -166,7 +176,7 @@ export function CalendarView() {
                   onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
                   onDrop={(e) => onDropDay(e, key)}
                   className={cn(
-                    'min-h-[90px] border rounded-md p-1.5 transition-colors',
+                    'min-h-[90px] border rounded-md p-1.5 transition-colors relative',
                     !inMonth && 'opacity-40 bg-muted/20',
                     isToday(day) && 'bg-primary/5 border-primary/30',
                     dragOverKey === key && 'ring-2 ring-primary bg-primary/10'
@@ -174,13 +184,53 @@ export function CalendarView() {
                 >
                   <div
                     className={cn(
-                      'text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full',
+                      'text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full relative z-[1]',
                       isToday(day) && 'bg-primary text-primary-foreground'
                     )}
                   >
                     {format(day, 'd')}
                   </div>
-                  <div className="space-y-0.5">
+                  {/* Birthday highlight */}
+                  {(() => {
+                    const bdayPeople = birthdays.filter((b) => isSameMonthDay(b.date, day));
+                    const isUserBday =
+                      user?.birthday && isSameMonthDay(String(user.birthday), day);
+                    if (!bdayPeople.length && !isUserBday) return null;
+                    return (
+                      <div
+                        className={cn(
+                          'absolute inset-0 rounded-md overflow-hidden pointer-events-none z-0',
+                          'ring-2 ring-primary/70 bg-primary/10'
+                        )}
+                      >
+                        {effectsOn && (
+                          <div className="absolute inset-0 tf-bday-float text-[10px] leading-none">
+                            <span className="absolute left-1 top-1 animate-[tf-bday_4s_ease-in-out_infinite]">🎈</span>
+                            <span className="absolute right-1 top-2 animate-[tf-bday_5s_ease-in-out_infinite_0.5s]">🎂</span>
+                            <span className="absolute left-2 bottom-1 animate-[tf-bday_4.5s_ease-in-out_infinite_1s]">✨</span>
+                            <span className="absolute right-2 bottom-2 animate-[tf-bday_3.5s_ease-in-out_infinite_0.2s]">🎉</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  <div className="space-y-0.5 relative z-[1]">
+                    {birthdays
+                      .filter((b) => isSameMonthDay(b.date, day))
+                      .map((b) => (
+                        <div
+                          key={b.id}
+                          className="text-[10px] px-1 py-0.5 rounded bg-pink-500/20 text-pink-200 truncate"
+                          title={`${b.name} (${ageFromDate(b.date)} лет)`}
+                        >
+                          🎂 {b.name}
+                        </div>
+                      ))}
+                    {user?.birthday && isSameMonthDay(String(user.birthday), day) && (
+                      <div className="text-[10px] px-1 py-0.5 rounded bg-primary/25 text-primary truncate">
+                        🎂 Мой ДР
+                      </div>
+                    )}
                     {dayTasks.slice(0, 3).map((task) => (
                       <button
                         key={task.id}

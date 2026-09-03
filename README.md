@@ -161,13 +161,17 @@ AI_SERVICE_URL=http://127.0.0.1:8000
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-### Миграции
+### Схема базы данных
+
+Для локальной разработки используйте безопасную синхронизацию схемы:
 
 ```bash
 cd apps/api
-npx prisma migrate dev
 npx prisma generate
+npx prisma db push
 ```
+
+`db push` здесь выбран специально: проект поставляется без каталога миграций, а `prisma migrate dev` при обнаружении drift может предложить сбросить dev-базу. Скрипт `scripts/setup.sh` больше не использует `migrate dev` и не проглатывает ошибки.
 
 ### Запуск в разработке
 

@@ -1,3 +1,13 @@
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 class ApiClient {
@@ -27,11 +37,17 @@ class ApiClient {
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    let res: Response;
+    try {
+      res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    } catch {
+      throw new ApiError('Не удалось подключиться к серверу', 0);
+    }
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: { message: 'Ошибка сети' } }));
-      throw new Error(error.error?.message || 'Ошибка запроса');
+      const error = await res.json().catch(() => ({ error: { message: `Ошибка ${res.status}` } }));
+      const msg = error.error?.message || error.message || `Ошибка ${res.status}`;
+      throw new ApiError(msg, res.status);
     }
     return res.json();
   }
@@ -231,6 +247,22 @@ class ApiClient {
       averageMinutes: number;
       byDay?: Record<string, number>;
     }>('/focus/stats');
+  }
+
+  getBirthdays() {
+    return this.request<{ birthdays: any[] }>('/birthdays');
+  }
+
+  createBirthday(data: any) {
+    return this.request<{ birthday: any }>('/birthdays', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  deleteBirthday(id: string) {
+    return this.request<{ success: boolean }>(`/birthdays/${id}`, { method: 'DELETE' });
+  }
+
+  updateProfile(data: any) {
+    return this.request<{ user: any }>('/auth/me', { method: 'PATCH', body: JSON.stringify(data) });
   }
 }
 

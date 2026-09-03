@@ -343,3 +343,8 @@ html.effects-on aside img[alt="TaskFlow"] {
   0%, 100% { filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.35)); }
   50% { filter: drop-shadow(0 0 14px hsl(var(--primary) / 0.65)); }
 }
+
+@keyframes tf-bday {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+  50% { transform: translateY(-6px) scale(1.08); opacity: 1; }
+}

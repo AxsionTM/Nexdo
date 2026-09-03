@@ -1,4 +1,4 @@
-const CACHE = 'taskflow-v1';
+const CACHE = 'taskflow-v2';
 const ASSETS = ['/', '/login', '/register', '/app'];
 
 self.addEventListener('install', (event) => {
@@ -27,7 +27,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static
+  // HTML/navigation requests must be network-first so a deployment never
+  // gets stuck on a stale /login or /app page.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Cache-first for static assets.
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetched = fetch(request).then((response) => {

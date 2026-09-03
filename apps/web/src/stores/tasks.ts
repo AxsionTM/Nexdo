@@ -96,19 +96,22 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         ? 'true'
         : undefined;
 
+    // Calendar always shows all open tasks for the month (not only today)
+    if (displayMode === 'calendar') {
+      await fetchTasks({ includeCompleted: 'true' });
+      return;
+    }
+
     if (currentView === 'today') {
       await fetchToday();
-      // Sync tasks from today for kanban/calendar/matrix (no longer merge overdue into today)
       const { todayTasks } = get();
       set({ tasks: todayTasks });
-      if (displayMode !== 'list') {
-        // keep tasks as today set
-      }
     } else if (currentView === 'overdue') {
       await fetchOverdue();
-      // Put overdue list into tasks so kanban/calendar/matrix use the same set
       const { overdueTasks } = get();
       set({ tasks: overdueTasks });
+    } else if (currentView === 'inbox') {
+      await fetchTasks({ inbox: 'true', includeCompleted: 'false' });
     } else if (currentView === 'project' && currentProjectId) {
       await fetchTasks({
         projectId: currentProjectId,

@@ -81,6 +81,7 @@ services:
     volumes:
       - ./apps/api:/app
       - /app/node_modules
+    command: ["sh", "-c", "npx prisma db push && npm run dev"]
 
   web:
     build:

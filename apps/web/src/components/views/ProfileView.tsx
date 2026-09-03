@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export function ProfileView() {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const { tasks, overdueTasks, fetchTasks, fetchOverdue } = useTasksStore();
   const { goals, fetchGoals } = useGoalsStore();
   const { projects, fetchProjects } = useProjectsStore();
@@ -90,6 +90,34 @@ export function ProfileView() {
       </div>
 
       <div className="p-4 md:p-6 space-y-4 max-w-5xl">
+
+        {/* Birthday */}
+        <div className="rounded-xl border bg-card p-4 space-y-2">
+          <h2 className="text-sm font-semibold">Дата рождения</h2>
+          <p className="text-xs text-muted-foreground">
+            Никак не влияет на работу приложения — только чтобы красиво выделить день в календаре.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+              defaultValue={user?.birthday ? String(user.birthday).slice(0, 10) : ''}
+              onChange={async (e) => {
+                const v = e.target.value || null;
+                try {
+                  const { user: u } = await api.updateProfile({ birthday: v });
+                  setUser?.(u);
+                } catch (err: any) {
+                  alert(
+                    (err?.message || 'Не удалось сохранить') +
+                      '\nЕсли колонки birthday ещё нет: в apps/api выполните npx prisma db push'
+                  );
+                }
+              }}
+            />
+          </div>
+        </div>
+
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Stat

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -21,6 +22,19 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+function parseDateOnly(value: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new AppError(400, 'Дата должна быть в формате YYYY-MM-DD');
+  }
+
+  const date = new Date(`${value}T12:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new AppError(400, 'Некорректная дата');
+  }
+
+  return date;
+}
 
 function generateToken(userId: string): string {
   return jwt.sign(
@@ -191,6 +205,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res, next) => {
         avatarUrl: true,
         theme: true,
         locale: true,
+        birthday: true,
         createdAt: true,
       },
     });
@@ -199,6 +214,44 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res, next) => {
       throw new AppError(404, 'Пользователь не найден');
     }
 
+    res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/me', authMiddleware, async (req: AuthRequest, res, next) => {
+  try {
+    const schema = z.object({
+      name: z.string().min(1).optional(),
+      theme: z.string().optional(),
+      locale: z.string().optional(),
+      birthday: z.string().nullable().optional(),
+      avatarUrl: z.string().nullable().optional(),
+    });
+    const data = schema.parse(req.body);
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.theme !== undefined ? { theme: data.theme } : {}),
+        ...(data.locale !== undefined ? { locale: data.locale } : {}),
+        ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
+        ...(data.birthday !== undefined
+          ? { birthday: data.birthday ? parseDateOnly(data.birthday) : null }
+          : {}),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        theme: true,
+        locale: true,
+        birthday: true,
+        createdAt: true,
+      },
+    });
     res.json({ user });
   } catch (err) {
     next(err);

@@ -16,16 +16,18 @@ import { focusRouter } from './modules/focus/focus.routes';
 import { smartListsRouter } from './modules/smart-lists/smart-lists.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { exportRouter } from './modules/export/export.routes';
+import { birthdaysRouter } from './modules/birthdays/birthdays.routes';
 import { errorHandler } from './common/middleware/error-handler';
 import { authMiddleware } from './common/middleware/auth';
 
 dotenv.config();
 
 const app = express();
+const corsOrigin = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000';
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   },
 });
@@ -34,7 +36,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: corsOrigin,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -62,6 +64,7 @@ app.use('/focus', authMiddleware, focusRouter);
 app.use('/smart-lists', authMiddleware, smartListsRouter);
 app.use('/ai', authMiddleware, aiRouter);
 app.use('/export', authMiddleware, exportRouter);
+app.use('/birthdays', authMiddleware, birthdaysRouter);
 
 app.use(errorHandler);
 

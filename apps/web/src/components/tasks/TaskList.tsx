@@ -15,6 +15,7 @@ import { TrashView } from '@/components/tasks/TrashView';
 import { AgendaView } from '@/components/views/AgendaView';
 import { PulseView } from '@/components/views/PulseView';
 import { ProfileView } from '@/components/views/ProfileView';
+import { BirthdaysView } from '@/components/views/BirthdaysView';
 import { Loader2, List, Columns3, CalendarDays, Grid2x2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,8 @@ const viewTitles: Record<string, string> = {
   habits: 'Привычки',
   goals: 'Цели',
   focus: 'Фокус',
+  birthdays: 'Дни рождения',
+  inbox: 'Входящие',
   project: 'Проект',
 };
 
@@ -71,6 +74,7 @@ export function TaskList() {
   if (currentView === 'agenda') return <AgendaView />;
   if (currentView === 'pulse') return <PulseView />;
   if (currentView === 'profile') return <ProfileView />;
+  if (currentView === 'birthdays') return <BirthdaysView />;
 
   const displayTasks =
     currentView === 'today'
