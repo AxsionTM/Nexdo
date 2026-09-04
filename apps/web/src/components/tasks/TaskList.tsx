@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTasksStore, type DisplayMode } from '@/stores/tasks';
 import { useProjectsStore } from '@/stores/projects';
 import { TaskItem } from './TaskItem';
@@ -16,6 +16,7 @@ import { AgendaView } from '@/components/views/AgendaView';
 import { PulseView } from '@/components/views/PulseView';
 import { ProfileView } from '@/components/views/ProfileView';
 import { BirthdaysView } from '@/components/views/BirthdaysView';
+import { GraphView } from '@/components/views/GraphView';
 import { Loader2, List, Columns3, CalendarDays, Grid2x2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ const viewTitles: Record<string, string> = {
   goals: 'Цели',
   focus: 'Фокус',
   birthdays: 'Дни рождения',
+  graph: 'Граф',
   inbox: 'Входящие',
   project: 'Проект',
 };
@@ -61,11 +63,33 @@ export function TaskList() {
       currentView !== 'trash' &&
       currentView !== 'agenda' &&
       currentView !== 'pulse' &&
-      currentView !== 'profile'
+      currentView !== 'profile' &&
+      currentView !== 'graph'
     ) {
       refreshCurrentView();
     }
   }, [currentView, currentProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const displayTasks =
+    currentView === 'today'
+      ? todayTasks
+      : currentView === 'overdue'
+      ? overdueTasks
+      : tasks;
+
+  // Hooks must run on every render. Keep this before the view-specific early returns
+  // so switching between normal views and Agenda/Graph/etc. never changes hook order.
+  const weekGroups = useMemo(() => {
+    if (currentView !== 'week') return [];
+    const groups = new Map<string, any[]>();
+    for (const task of displayTasks) {
+      const d = task.startDate || task.dueDate;
+      const key = d ? new Date(d).toLocaleDateString('ru-RU') : 'Без даты';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(task);
+    }
+    return Array.from(groups.entries());
+  }, [currentView, displayTasks]);
 
   if (currentView === 'habits') return <HabitsView />;
   if (currentView === 'goals') return <GoalsView />;
@@ -75,13 +99,7 @@ export function TaskList() {
   if (currentView === 'pulse') return <PulseView />;
   if (currentView === 'profile') return <ProfileView />;
   if (currentView === 'birthdays') return <BirthdaysView />;
-
-  const displayTasks =
-    currentView === 'today'
-      ? todayTasks
-      : currentView === 'overdue'
-      ? overdueTasks
-      : tasks;
+  if (currentView === 'graph') return <GraphView />;
 
   let title = viewTitles[currentView] || 'Задачи';
   if (currentView === 'project' && currentProjectId) {
@@ -143,13 +161,24 @@ export function TaskList() {
               <p className="text-xs mt-1">Добавьте первую задачу выше</p>
             </div>
           ) : (
-            <div className="mt-2 space-y-0.5">
-              <div>
-                {displayTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
+            currentView === 'week' ? (
+              <div className="mt-2 space-y-4">
+                {weekGroups.map(([date, group]) => (
+                  <section key={date}>
+                    <h2 className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b">
+                      {date}
+                    </h2>
+                    <div className="mt-1">
+                      {group.map((task: any) => <TaskItem key={task.id} task={task} />)}
+                    </div>
+                  </section>
                 ))}
               </div>
-            </div>
+            ) : (
+              <div className="mt-2 space-y-0.5">
+                <div>{displayTasks.map((task) => <TaskItem key={task.id} task={task} />)}</div>
+              </div>
+            )
           )}
         </div>
       )}

@@ -57,6 +57,7 @@ export function TaskDetail() {
   const [newTagName, setNewTagName] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
   const [saving, setSaving] = useState(false);
+  const isSubtask = Boolean(task?.parentId);
 
   const loadTask = useCallback(async () => {
     if (!selectedTaskId) {
@@ -340,7 +341,7 @@ const handleDueDateChange = (value: string) => {
     <aside className="w-[380px] border-l bg-card flex flex-col h-full shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
-        <span className="text-sm font-medium text-muted-foreground">Детали задачи</span>
+        <span className="text-sm font-medium text-muted-foreground">{isSubtask ? 'Подзадача' : 'Детали задачи'}</span>
         <button
           onClick={() => setSelectedTask(null)}
           className="p-1 rounded hover:bg-accent text-muted-foreground"
@@ -376,6 +377,8 @@ const handleDueDateChange = (value: string) => {
             />
           </div>
 
+          {!isSubtask && (
+            <>
           {/* Description */}
           <div className="px-4 pb-3">
             <textarea
@@ -503,7 +506,10 @@ const handleDueDateChange = (value: string) => {
               </select>
             </div>
           </div>
+            </>
+          )}
 
+          {!isSubtask && <div>
           {/* Tags */}
           <div className="px-4 py-3 border-t">
             <div className="flex items-center gap-2 mb-2">
@@ -555,7 +561,9 @@ const handleDueDateChange = (value: string) => {
               )}
             </div>
           </div>
+          </div>}
 
+          {!isSubtask && <>
           {/* Checklist */}
           <div className="px-4 py-3 border-t">
             <div className="flex items-center gap-2 mb-2">
@@ -655,9 +663,10 @@ const handleDueDateChange = (value: string) => {
               />
             </div>
           </div>
+          </>}
 
 
-
+          {!isSubtask && <>
           {/* Recurrence */}
           <div className="px-4 space-y-1 border-t py-3">
             <div className="relative">
@@ -792,22 +801,26 @@ const handleDueDateChange = (value: string) => {
             </div>
           </div>
 
+          </>}
+
           {/* Delete / Archive */}
           <div className="px-4 py-4 border-t space-y-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onClick={async () => {
-                if (!selectedTaskId) return;
-                await api.archiveTask(selectedTaskId);
-                setSelectedTask(null);
-                await useTasksStore.getState().refreshCurrentView();
-              }}
-            >
-              <Archive className="h-4 w-4" />
-              Архивировать
-            </Button>
+            {!isSubtask && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-2"
+                onClick={async () => {
+                  if (!selectedTaskId) return;
+                  await api.archiveTask(selectedTaskId);
+                  setSelectedTask(null);
+                  await useTasksStore.getState().refreshCurrentView();
+                }}
+              >
+                <Archive className="h-4 w-4" />
+                Архивировать
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

@@ -13,12 +13,31 @@ const FLAG_COLOR: Record<string, string> = {
 };
 
 export function TaskItem({ task, depth = 0 }: { task: any; depth?: number }) {
-  const { selectedTaskId, setSelectedTask, completeTask } = useTasksStore();
+  const { selectedTaskId, setSelectedTask, completeTask, currentView } = useTasksStore();
   const isSelected = selectedTaskId === task.id;
-  const isOverdue =
-    task.dueDate &&
-    new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0)) &&
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const due = task.dueDate ? new Date(task.dueDate) : null;
+  // A task that finished earlier today is late by time, but remains in today's
+  // list and only becomes officially overdue after the calendar day ends.
+  const isTimeLateToday =
+    Boolean(due) &&
+    due!.getTime() < now.getTime() &&
+    due!.getTime() >= todayStart.getTime() &&
     task.status !== 'COMPLETED';
+  const isOverdue =
+    Boolean(due) &&
+    due!.getTime() < todayStart.getTime() &&
+    task.status !== 'COMPLETED';
+  const contextualDateLabel =
+    currentView === 'today' && (task.startDate || task.dueDate)
+      ? 'Сегодня'
+      : currentView === 'tomorrow' && (task.startDate || task.dueDate)
+      ? 'Завтра'
+      : formatDate(task.dueDate || task.startDate);
 
   return (
     <div>
@@ -41,9 +60,11 @@ export function TaskItem({ task, depth = 0 }: { task: any; depth?: number }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            {task.priority && task.priority !== 'NONE' && (
+            {depth > 0 ? (
+              <span className="h-2 w-2 shrink-0 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,.55)]" title="Подзадача" />
+            ) : task.priority && task.priority !== 'NONE' ? (
               <Flag className={cn('h-3.5 w-3.5 shrink-0', FLAG_COLOR[task.priority])} />
-            )}
+            ) : null}
             <p
               className={cn(
                 'text-sm truncate',
@@ -58,11 +79,11 @@ export function TaskItem({ task, depth = 0 }: { task: any; depth?: number }) {
               <span
                 className={cn(
                   'inline-flex items-center gap-1 text-[11px]',
-                  isOverdue ? 'text-red-500' : 'text-muted-foreground'
+                  isOverdue ? 'text-red-500' : isTimeLateToday ? 'text-amber-500' : 'text-muted-foreground'
                 )}
               >
                 <Calendar className="h-3 w-3" />
-                {formatDate(task.dueDate)}
+                {isOverdue ? 'Просрочено' : isTimeLateToday ? `${contextualDateLabel} · время прошло` : contextualDateLabel}
               </span>
             )}
             {task.tags?.map((tt: any) => (

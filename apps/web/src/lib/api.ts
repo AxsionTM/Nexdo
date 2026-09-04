@@ -249,6 +249,11 @@ class ApiClient {
     }>('/focus/stats');
   }
 
+  getGraph(params?: Record<string, string>) {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request<{ nodes: any[]; edges: any[] }>(`/graph${query}`);
+  }
+
   getBirthdays() {
     return this.request<{ birthdays: any[] }>('/birthdays');
   }

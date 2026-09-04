@@ -61,6 +61,9 @@ router.get('/', async (req: AuthRequest, res, next) => {
       const inbox = await prisma.project.findFirst({
         where: { isInbox: true, members: { some: { userId: req.userId } } },
       });
+      // Inbox shows root tasks only. Their children are returned by the nested
+      // `children` relation below, so subtasks never appear as duplicate top-level rows.
+      where.parentId = null;
       where.OR = [
         { projectId: null },
         ...(inbox ? [{ projectId: inbox.id }] : []),
@@ -78,9 +81,36 @@ router.get('/', async (req: AuthRequest, res, next) => {
     }
 
     if (dueBefore || dueAfter) {
-      where.dueDate = {};
-      if (dueBefore) where.dueDate.lte = new Date(dueBefore as string);
-      if (dueAfter) where.dueDate.gte = new Date(dueAfter as string);
+      // Date-range views work with an interval, not only with dueDate.
+      // A task is visible on every day touched by [startDate, dueDate].
+      const rangeStart = dueAfter ? new Date(dueAfter as string) : null;
+      const rangeEnd = dueBefore ? new Date(dueBefore as string) : null;
+
+      if (rangeStart && rangeEnd) {
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              {
+                startDate: null,
+                dueDate: { gte: rangeStart, lte: rangeEnd },
+              },
+              {
+                dueDate: null,
+                startDate: { gte: rangeStart, lte: rangeEnd },
+              },
+              {
+                startDate: { lte: rangeEnd },
+                dueDate: { gte: rangeStart },
+              },
+            ],
+          },
+        ];
+      } else if (rangeStart) {
+        where.dueDate = { gte: rangeStart };
+      } else if (rangeEnd) {
+        where.dueDate = { lte: rangeEnd };
+      }
     }
 
     if (search) {
@@ -133,9 +163,25 @@ router.get('/today', async (req: AuthRequest, res, next) => {
         OR: [
           {
             status: { not: 'COMPLETED' },
-            OR: [
-              { dueDate: { gte: start, lte: end } },
-              { startDate: { gte: start, lte: end } },
+            AND: [
+              {
+                OR: [
+                  { startDate: null },
+                  { startDate: { lte: end } },
+                ],
+              },
+              {
+                OR: [
+                  { dueDate: null },
+                  { dueDate: { gte: start } },
+                ],
+              },
+              {
+                OR: [
+                  { startDate: { not: null } },
+                  { dueDate: { not: null } },
+                ],
+              },
             ],
           },
           {
@@ -370,20 +416,21 @@ router.post('/', async (req: AuthRequest, res, next) => {
   try {
     const data = createTaskSchema.parse(req.body);
 
+    const isSubtaskCreate = Boolean(data.parentId);
     const task = await prisma.task.create({
       data: {
         title: data.title,
-        description: data.description,
-        priority: data.priority || 'NONE',
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        startDate: data.startDate ? new Date(data.startDate) : null,
+        description: isSubtaskCreate ? null : data.description,
+        priority: isSubtaskCreate ? 'NONE' : (data.priority || 'NONE'),
+        dueDate: isSubtaskCreate ? null : (data.dueDate ? new Date(data.dueDate) : null),
+        startDate: isSubtaskCreate ? null : (data.startDate ? new Date(data.startDate) : null),
         projectId: data.projectId,
-        sectionId: data.sectionId,
+        sectionId: isSubtaskCreate ? null : data.sectionId,
         parentId: data.parentId,
-        isAllDay: data.isAllDay ?? true,
+        isAllDay: isSubtaskCreate ? true : (data.isAllDay ?? true),
         status: data.status || 'TODO',
-        recurrenceType: data.recurrenceType || 'NONE',
-        recurrenceRule: data.recurrenceRule,
+        recurrenceType: isSubtaskCreate ? 'NONE' : (data.recurrenceType || 'NONE'),
+        recurrenceRule: isSubtaskCreate ? null : data.recurrenceRule,
         creatorId: req.userId!,
         tags: data.tagIds
           ? { create: data.tagIds.map((tagId) => ({ tagId })) }
@@ -440,11 +487,23 @@ router.patch('/:id', async (req: AuthRequest, res, next) => {
     }
 
     const updateData: any = { ...data };
+    const resultingParentId = data.parentId !== undefined ? data.parentId : existing.parentId;
+    if (resultingParentId) {
+      // Subtasks are intentionally lightweight: title + completion only.
+      updateData.priority = 'NONE';
+      updateData.description = null;
+      updateData.dueDate = null;
+      updateData.startDate = null;
+      updateData.isAllDay = true;
+      updateData.recurrenceType = 'NONE';
+      updateData.recurrenceRule = null;
+      updateData.remindMinutes = undefined;
+    }
 
-    if (data.dueDate !== undefined) {
+    if (data.dueDate !== undefined && !resultingParentId) {
       updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
     }
-    if (data.startDate !== undefined) {
+    if (data.startDate !== undefined && !resultingParentId) {
       updateData.startDate = data.startDate ? new Date(data.startDate) : null;
     }
     if (data.status === 'COMPLETED' && existing.status !== 'COMPLETED') {
@@ -457,6 +516,7 @@ router.patch('/:id', async (req: AuthRequest, res, next) => {
     const tagIds = data.tagIds;
     delete updateData.tagIds;
     delete updateData.checklist;
+    delete updateData.remindMinutes;
 
     if (tagIds !== undefined) {
       await prisma.taskTag.deleteMany({ where: { taskId: req.params.id } });
@@ -465,6 +525,10 @@ router.patch('/:id', async (req: AuthRequest, res, next) => {
           data: tagIds.map((tagId) => ({ taskId: req.params.id, tagId })),
         });
       }
+    }
+
+    if (resultingParentId) {
+      await prisma.reminder.deleteMany({ where: { taskId: req.params.id } });
     }
 
     const task = await prisma.task.update({

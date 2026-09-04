@@ -47,6 +47,7 @@ export function CreateTaskModal({ open, onClose }: Props) {
   const [remindMinutes, setRemindMinutes] = useState<number | ''>('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [timeConflict, setTimeConflict] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -69,6 +70,7 @@ export function CreateTaskModal({ open, onClose }: Props) {
     setRecurrenceType('NONE');
     setRemindMinutes('');
     setError('');
+    setTimeConflict('');
   };
 
   const handleClose = () => {
@@ -115,6 +117,26 @@ export function CreateTaskModal({ open, onClose }: Props) {
       if (recurrenceType && recurrenceType !== 'NONE') data.recurrenceType = recurrenceType;
       if (dueIso && remindMinutes !== '') data.remindMinutes = Number(remindMinutes);
       // If only start given, also set due to same day end feel optional - leave as is
+
+      // Overlapping timed tasks are allowed, but the user should be warned.
+      if (startIso && dueIso) {
+        try {
+          const { tasks: existing } = await api.getTasks({ includeCompleted: 'false' });
+          const start = new Date(startIso).getTime();
+          const due = new Date(dueIso).getTime();
+          const conflicts = existing.filter((t: any) => {
+            if (!t.startDate || !t.dueDate || t.status === 'COMPLETED' || t.parentId) return false;
+            const a = new Date(t.startDate).getTime(), b = new Date(t.dueDate).getTime();
+            return a < due && b > start;
+          });
+          if (conflicts.length) {
+            const names = conflicts.slice(0, 2).map((t: any) => `«${t.title}»`).join(', ');
+            const message = `На это время уже есть ${conflicts.length === 1 ? 'задача' : 'задачи'}: ${names}. Пересечение разрешено.`;
+            window.alert(`⚠️ Пересечение времени\n\n${message}`);
+            // Intentionally continue: two simultaneous tasks can be legitimate.
+          }
+        } catch {}
+      }
 
       await createTask(data);
       await refreshCurrentView();
