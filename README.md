@@ -20,28 +20,7 @@
 
 ## Навигация
 
-[Как запустить](#как-запустить) · [Функции](#функции) · [Архитектура](#архитектура) · [Obsidian](#obsidian) · [Последние изменения](#последние-изменения)
-
-**TaskFlow** — полнофункциональный менеджер задач в духе TickTick, построенный как полноценное full-stack приложение.
-
-Проект объединяет задачи, проекты, календарь, повестку дня, Kanban, привычки, цели, Pomodoro, статистику продуктивности, AI-инструменты и интерактивный **Obsidian-style граф задач**.
-
-Frontend построен на **React 18 + Next.js 14 + TypeScript**. Backend разделён на отдельный Node.js/Express API, а AI вынесен в отдельный Python/FastAPI сервис.
-
-Интерфейс ориентирован на ежедневное планирование: точные даты и время, многочасовые задачи, подзадачи, повторения, напоминания, drag-and-drop и обработка пересечений расписания.
-
-<p align="center">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
-  <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Express-API-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
-  <img src="https://img.shields.io/badge/PostgreSQL-Prisma-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/FastAPI-AI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
-</p>
-
----
+Как запустить · [Функции](#функции) · Архитектура · [Obsidian](#obsidian) · Последние изменения
 
 ## Основные возможности
 
