@@ -24,7 +24,19 @@ import { authMiddleware } from './common/middleware/auth';
 dotenv.config();
 
 const app = express();
-const corsOrigin = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000';
+const configuredOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+const corsOrigin = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+  if (!origin || configuredOrigins.includes(origin)) {
+    callback(null, true);
+    return;
+  }
+  callback(null, false);
+};
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -88,8 +100,10 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
-httpServer.listen(PORT, () => {
-  console.log(`API server running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    console.log(`API server running on port ${PORT}`);
+  });
+}
 
-export { io };
+export { app, io };
