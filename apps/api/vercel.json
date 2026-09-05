@@ -1,10 +1,3 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "prisma generate && prisma db push --accept-data-loss",
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api"
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }
