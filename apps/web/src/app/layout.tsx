@@ -7,8 +7,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 export const metadata: Metadata = {
-  title: 'TaskFlow — Менеджер задач',
-  description: 'Полнофункциональный менеджер задач с привычками, целями и фокус-режимом',
+  title: 'TaskFlow — планируй. выполняй. развивайся.',
+  description: 'TaskFlow — единое пространство для задач, проектов, привычек, целей и фокус-режима.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -18,18 +18,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#3b82f6',
+  themeColor: '#070a12',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={["light","dark","ocean","forest","crimson","violet"]}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={["light", "dark", "ocean", "forest", "crimson", "violet"]}>
           <ServiceWorkerRegister />
           {children}
         </ThemeProvider>
