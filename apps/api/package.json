@@ -11,7 +11,7 @@
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma db push --accept-data-loss"
+    "vercel-build": "prisma generate && prisma db push"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
