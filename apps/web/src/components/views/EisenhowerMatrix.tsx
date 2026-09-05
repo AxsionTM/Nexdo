@@ -142,7 +142,7 @@ export function EisenhowerMatrix() {
 
   return (
     <div className="flex-1 overflow-auto p-4">
-      <div className="grid grid-cols-2 gap-3 h-full min-h-[500px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full min-h-[500px]">
         {QUADRANTS.map((q) => (
           <div
             key={q.id}

@@ -351,7 +351,7 @@ const handleDueDateChange = (value: string) => {
   if (!selectedTaskId) return null;
 
   return (
-    <aside className="w-[380px] border-l bg-card flex flex-col h-full shrink-0">
+    <aside className="task-detail-panel fixed inset-y-0 right-0 z-[80] flex h-[100dvh] w-[min(380px,100vw)] shrink-0 flex-col border-l bg-card shadow-2xl transition-transform duration-200 lg:static lg:z-auto lg:h-full lg:w-[380px] lg:shadow-none">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <span className="text-sm font-medium text-muted-foreground">{isSubtask ? 'Подзадача' : 'Детали задачи'}</span>

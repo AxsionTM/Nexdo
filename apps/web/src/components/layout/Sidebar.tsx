@@ -48,7 +48,12 @@ const smartViews = [
   { id: 'overdue', label: 'Просроченные', icon: AlertCircle },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const { projects, fetchProjects, createProject, deleteProject } = useProjectsStore();
   const focusRunning = useFocusStore((s) => s.isRunning);
@@ -86,16 +91,19 @@ export function Sidebar() {
   const handleViewClick = (viewId: string) => {
     setCurrentView(viewId);
     setCurrentProject(null);
+    onMobileClose?.();
   };
 
   const handleProjectClick = (projectId: string, isInbox?: boolean) => {
     if (isInbox) {
       setCurrentView('inbox');
       setCurrentProject(null);
+      onMobileClose?.();
       return;
     }
     setCurrentView('project');
     setCurrentProject(projectId);
+    onMobileClose?.();
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -135,7 +143,18 @@ export function Sidebar() {
 
   return (
     <>
-      <aside data-tour="sidebar" className="flex h-full w-60 flex-col border-r bg-card tf-glow-border">
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Закрыть меню"
+          onClick={() => onMobileClose?.()}
+          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-[2px] lg:hidden"
+        />
+      )}
+      <aside data-tour="sidebar" className={cn(
+        'app-sidebar fixed inset-y-0 left-0 z-[100] flex h-[100dvh] w-[min(18rem,88vw)] flex-col border-r bg-card tf-glow-border shadow-2xl transition-transform duration-200 lg:static lg:z-auto lg:h-full lg:w-60 lg:translate-x-0 lg:shadow-none',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      )}>
         <div className="flex items-center gap-2 px-4 py-3 border-b">
           <Logo size={32} />
           <span className="font-semibold text-sm">TaskFlow</span>
@@ -146,7 +165,7 @@ export function Sidebar() {
             variant="outline"
             className="w-full justify-start gap-2 text-muted-foreground"
             size="sm"
-            onClick={() => setSearchOpen(true)}
+            onClick={() => { setSearchOpen(true); onMobileClose?.(); }}
           >
             <Search className="h-4 w-4" />
             Поиск...

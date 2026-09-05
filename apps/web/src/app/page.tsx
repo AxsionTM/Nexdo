@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -211,6 +212,53 @@ function ProductPreview() {
   );
 }
 
+function VisualShowcase() {
+  const chips = [
+    ['Задачи', 'Планируй и выполняй без лишнего'],
+    ['Календарь', 'Весь день перед глазами'],
+    ['Граф', 'Связи между задачами'],
+    ['Фокус', 'Работай глубже и спокойнее'],
+    ['AI', 'Помощь с планированием'],
+  ];
+
+  return (
+    <div className="relative mx-auto w-full max-w-7xl">
+      {/* Desktop: native UI mockup. The portrait promo artwork is intentionally hidden. */}
+      <div className="hidden md:block">
+        <ProductPreview />
+      </div>
+
+      {/* Mobile: portrait artwork is a much better fit than a squeezed desktop dashboard. */}
+      <div className="relative md:hidden">
+        <div className="absolute -inset-5 rounded-[2.5rem] bg-primary/10 blur-3xl" />
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#050812] p-1.5 shadow-2xl shadow-black/50">
+          <div className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-black">
+            <div className="relative aspect-[9/16] w-full">
+              <Image
+                src="/showcase/taskflow-ui-showcase.png"
+                alt="TaskFlow на мобильном устройстве"
+                fill
+                priority
+                sizes="(max-width: 767px) 92vw, 0px"
+                className="object-cover object-center"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-5">
+        {chips.map(([title, text]) => (
+          <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.025] px-3 py-3">
+            <p className="text-xs font-semibold text-white">{title}</p>
+            <p className="mt-1 text-[11px] leading-4 text-slate-500">{text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -309,7 +357,7 @@ export default function HomePage() {
         </div>
 
         <div id="preview" className="mt-16 scroll-mt-24 sm:mt-20">
-          <ProductPreview />
+          <VisualShowcase />
         </div>
       </section>
 

@@ -10,10 +10,8 @@ export const metadata: Metadata = {
   title: 'TaskFlow — планируй. выполняй. развивайся.',
   description: 'TaskFlow — единое пространство для задач, проектов, привычек, целей и фокус-режима.',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'TaskFlow',
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 };
 

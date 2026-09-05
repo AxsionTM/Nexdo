@@ -60,7 +60,7 @@ export function ProfileView() {
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Banner */}
-      <div className="relative h-36 md:h-44 overflow-hidden border-b">
+      <div className="tf-profile-banner relative h-36 md:h-44 overflow-hidden border-b">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-primary/10 to-background" />
         <div className="absolute inset-0 opacity-40 tf-glow-border" />
         <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />

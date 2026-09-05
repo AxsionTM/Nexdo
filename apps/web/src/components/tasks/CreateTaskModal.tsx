@@ -101,7 +101,6 @@ export function CreateTaskModal({ open, onClose }: Props) {
 
   const performCreate = async (data: any) => {
     await createTask(data);
-    await refreshCurrentView();
     handleClose();
   };
 

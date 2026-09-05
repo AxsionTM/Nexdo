@@ -229,21 +229,47 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   createTask: async (data) => {
     const { task } = await api.createTask(data);
 
-    await get().refreshCurrentView();
+    // Update the visible UI immediately. The server refresh happens in the
+    // background so creating a task does not feel like the app is frozen.
+    set((state) => {
+      const addIfMissing = (items: Task[]) =>
+        items.some((item) => item.id === task.id)
+          ? items
+          : [task, ...items];
 
+      return {
+        tasks: addIfMissing(state.tasks),
+        todayTasks: addIfMissing(state.todayTasks),
+      };
+    });
+
+    void get().refreshCurrentView();
     return task;
   },
 
   updateTask: async (id, data) => {
-    await api.updateTask(id, data);
+    const { task } = await api.updateTask(id, data);
 
-    await get().refreshCurrentView();
+    set((state) => ({
+      tasks: state.tasks.map((item) => item.id === id ? { ...item, ...task } : item),
+      todayTasks: state.todayTasks.map((item) => item.id === id ? { ...item, ...task } : item),
+      overdueTasks: state.overdueTasks.map((item) => item.id === id ? { ...item, ...task } : item),
+    }));
+
+    void get().refreshCurrentView();
   },
 
   completeTask: async (id) => {
-    await api.completeTask(id);
+    const { task } = await api.completeTask(id);
+    const completed = task || { id, status: 'COMPLETED' };
 
-    await get().refreshCurrentView();
+    set((state) => ({
+      tasks: state.tasks.map((item) => item.id === id ? { ...item, ...completed } : item),
+      todayTasks: state.todayTasks.map((item) => item.id === id ? { ...item, ...completed } : item),
+      overdueTasks: state.overdueTasks.filter((item) => item.id !== id),
+    }));
+
+    void get().refreshCurrentView();
   },
 
   deleteTask: async (id) => {
@@ -251,13 +277,14 @@ export const useTasksStore = create<TasksState>((set, get) => ({
 
     const { selectedTaskId } = get();
 
-    if (selectedTaskId === id) {
-      set({
-        selectedTaskId: null,
-      });
-    }
+    set((state) => ({
+      tasks: state.tasks.filter((item) => item.id !== id),
+      todayTasks: state.todayTasks.filter((item) => item.id !== id),
+      overdueTasks: state.overdueTasks.filter((item) => item.id !== id),
+      selectedTaskId: selectedTaskId === id ? null : selectedTaskId,
+    }));
 
-    await get().refreshCurrentView();
+    void get().refreshCurrentView();
   },
 
   setSelectedTask: (id) =>

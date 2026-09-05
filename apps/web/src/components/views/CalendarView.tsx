@@ -109,7 +109,7 @@ export function CalendarView() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b">
+      <div className="tf-calendar-toolbar flex items-center justify-between px-4 py-2 border-b">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
             <ChevronLeft className="h-4 w-4" />
@@ -148,7 +148,8 @@ export function CalendarView() {
 
       {/* Month grid */}
       {mode === 'month' && (
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="calendar-scroll flex-1 overflow-auto p-2 sm:p-3">
+          <div className="calendar-grid min-w-[560px]">
           <div className="grid grid-cols-7 gap-px mb-1">
             {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((d) => (
               <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">
@@ -257,13 +258,14 @@ export function CalendarView() {
               );
             })}
           </div>
+          </div>
         </div>
       )}
 
       {/* Week view */}
       {mode === 'week' && (
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="grid grid-cols-7 gap-2 h-full">
+        <div className="calendar-week-scroll flex-1 overflow-auto p-2 sm:p-3">
+          <div className="grid min-w-[560px] grid-cols-7 gap-2 h-full">
             {weekDays.map((day) => {
               const key = format(day, 'yyyy-MM-dd');
               const dayTasks = tasksByDate.get(key) || [];

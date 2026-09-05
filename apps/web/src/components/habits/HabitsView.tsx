@@ -128,7 +128,7 @@ export function HabitsView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <header className="px-6 py-4 border-b flex items-center justify-between">
+      <header className="tf-view-header px-6 py-4 border-b flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />

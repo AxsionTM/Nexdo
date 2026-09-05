@@ -136,8 +136,8 @@ export function TaskList() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <header data-tour="views" className="px-6 py-3 border-b flex items-center justify-between gap-4">
+    <div className="tf-task-list flex-1 min-w-0 max-w-full flex flex-col min-h-0 overflow-hidden">
+      <header data-tour="views" className="tf-task-header shrink-0 px-6 py-3 border-b flex flex-wrap items-center justify-between gap-3 min-w-0">
         <div>
           <h1 className="text-xl font-semibold">{title}</h1>
           {displayMode === 'list' && (
@@ -158,14 +158,14 @@ export function TaskList() {
             onClick={prioritizeToday}
             disabled={aiPrioritizing || currentView !== 'today' || todayTasks.filter((task: any) => task.status !== 'COMPLETED' && !task.parentId).length === 0}
             title="AI расставит приоритеты для всех открытых задач сегодня"
-            className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+            className="tf-ai-button inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            {aiPrioritizing ? 'AI анализирует…' : 'AI приоритеты'}
+            <span className="tf-ai-label">{aiPrioritizing ? 'AI анализирует…' : 'AI приоритеты'}</span>
           </button>
         </div>
 
-        <div className="flex rounded-lg border overflow-hidden shrink-0">
+        <div className="tf-display-modes flex rounded-lg border overflow-hidden shrink-0">
           {DISPLAY_MODES.map((m) => {
             const Icon = m.icon;
             return (
@@ -181,7 +181,7 @@ export function TaskList() {
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{m.label}</span>
+                <span className="tf-task-mode-label hidden sm:inline">{m.label}</span>
               </button>
             );
           })}

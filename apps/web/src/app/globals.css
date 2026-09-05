@@ -348,3 +348,764 @@ html.effects-on aside img[alt="TaskFlow"] {
   0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
   50% { transform: translateY(-6px) scale(1.08); opacity: 1; }
 }
+
+/* ===== Responsive application shell ===== */
+html, body {
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 767px) {
+  /* Never let desktop-only hover effects make touch devices feel heavy. */
+  html.effects-on .tf-glow-border::before {
+    animation-duration: 8s;
+  }
+
+  html.effects-on main .group:hover,
+  html.effects-on main button:hover:not(:disabled),
+  html.effects-on main [role="checkbox"]:hover,
+  html.effects-on .rounded-xl.border:hover,
+  html.effects-on .rounded-2xl.border:hover,
+  html.effects-on .rounded-lg.border:hover {
+    box-shadow: none;
+  }
+
+  .mobile-app-header {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .task-detail-panel {
+    max-height: 100dvh;
+  }
+
+  /* Keep common two-column summaries readable on narrow screens. */
+  .task-detail-panel .grid.grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Horizontal boards/calendars can scroll instead of squeezing into unusable cards. */
+  .task-detail-panel input,
+  .task-detail-panel textarea,
+  .task-detail-panel select {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-app-header + main header {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .mobile-app-header + main header > div:last-child {
+    width: 100%;
+  }
+
+  .mobile-app-header + main header > div:last-child > .flex:first-child {
+    flex: 1;
+  }
+
+  .mobile-app-header + main header > div:last-child > .flex:last-child {
+    width: 100%;
+  }
+}
+
+/* Respect devices with a home indicator / camera cutout. */
+@supports (padding: max(0px)) {
+  @media (max-width: 767px) {
+    .app-sidebar > :last-child {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* ===== TaskFlow mobile UX hardening ===== */
+@media (max-width: 1023px) {
+  /*
+   * Mobile shell: the sidebar is an overlay and MUST NOT be a flex item.
+   * The content owns the whole viewport. This prevents a hidden/translated
+   * sidebar from reserving horizontal space or pushing the app to the right.
+   */
+  .app-shell {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 100vw;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-shell > main {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .app-shell > .app-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: min(320px, 88vw) !important;
+    max-width: calc(100vw - 20px);
+    height: 100dvh;
+    margin: 0 !important;
+    flex: none !important;
+  }
+
+  .app-shell > .app-sidebar:not(.translate-x-0) {
+    transform: translateX(-100%);
+  }
+
+  .app-shell > .app-sidebar.translate-x-0 {
+    transform: translateX(0);
+  }
+
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    min-width: 0;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* The application shell must never become wider than the viewport. */
+  .mobile-app-header,
+  .mobile-app-header + main,
+  .mobile-app-header + main > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .mobile-app-header {
+    position: sticky;
+    top: 0;
+    z-index: 70;
+    min-height: 52px;
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .mobile-app-header button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .app-sidebar {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  /* Prevent desktop fixed-width children from pushing the mobile viewport. */
+  main,
+  main > div,
+  main section,
+  main article,
+  main form {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tf-task-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .tf-task-header > div:first-child {
+    width: 100%;
+  }
+
+  .tf-task-header > div:last-child {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tf-task-header > div:last-child > button {
+    min-height: 38px;
+    flex: 0 0 auto;
+  }
+
+  .tf-task-header > div:last-child > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tf-task-header > div:last-child > div button {
+    min-height: 38px;
+  }
+
+  .tf-task-header > div:last-child > div button span {
+    display: none;
+  }
+
+  .tf-task-header > div:last-child > div button {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  /* Every secondary view gets the same mobile header behavior. */
+  .tf-view-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .tf-view-header > div,
+  .tf-view-header > section {
+    min-width: 0;
+  }
+
+  .tf-view-header > :last-child {
+    margin-left: auto;
+    max-width: 100%;
+  }
+
+  .tf-view-header button,
+  .tf-view-header label {
+    min-height: 38px;
+  }
+
+  /* Graph controls: stack compactly instead of overflowing the header. */
+  .tf-view-header .ml-auto {
+    width: 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tf-view-header .ml-auto button,
+  .tf-view-header .ml-auto label {
+    min-width: 0;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Task details become a true mobile sheet, not a squeezed desktop panel. */
+  .task-detail-panel {
+    width: 100vw !important;
+    max-width: 100vw;
+    border-left: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .task-detail-panel .grid.grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .task-detail-panel .px-4 {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  /* Keep inputs from creating horizontal overflow through long values. */
+  input,
+  textarea,
+  select {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Modals/dialogs should fit between the phone edges and safe areas. */
+  [role='dialog'] {
+    max-width: calc(100vw - 1rem);
+  }
+
+  /* Horizontal data views remain intentionally scrollable inside their own area. */
+  .calendar-scroll,
+  .overflow-x-auto {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Avoid giant empty gutters on narrow phones. */
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl,
+  .max-w-2xl {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  /* 360px-class phones: favor usable controls over decorative spacing. */
+  .mobile-app-header + main header h1,
+  .tf-view-header h1 {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .mobile-app-header + main header p,
+  .tf-view-header p {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tf-view-header .ml-auto {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tf-view-header .ml-auto button,
+  .tf-view-header .ml-auto label {
+    font-size: 0.7rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  /* Profile banner becomes a compact mobile card. */
+  .tf-view-header + .relative.h-36 {
+    height: 8.5rem;
+  }
+
+  /* Two-column statistic cards are still readable at 360px. */
+  .grid.grid-cols-2 {
+    min-width: 0;
+  }
+}
+
+
+
+@media (max-width: 1023px) {
+  .tf-calendar-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tf-calendar-toolbar > div:first-child {
+    min-width: 0;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tf-calendar-toolbar > div:first-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tf-calendar-toolbar > div:last-child {
+    margin-left: auto;
+  }
+
+  .tf-profile-banner > div:last-child {
+    left: 1rem;
+    right: 1rem;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .tf-profile-banner > div:last-child > div:first-child {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 0.875rem;
+    flex: 0 0 auto;
+  }
+
+  .tf-profile-banner > div:last-child > div:last-child {
+    min-width: 0;
+  }
+
+  .tf-profile-banner h1,
+  .tf-profile-banner p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .tf-calendar-toolbar {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .tf-calendar-toolbar > div:first-child button {
+    flex: 0 0 auto;
+  }
+
+  .tf-calendar-toolbar > div:last-child button {
+    min-height: 34px;
+  }
+
+  .tf-profile-banner {
+    height: 8.75rem;
+  }
+
+  .tf-profile-banner > div:last-child {
+    bottom: 0.75rem;
+  }
+}
+
+/* ===== Task list mobile layout fix ===== */
+.tf-task-list {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.tf-task-header {
+  min-width: 0;
+}
+
+.tf-task-header > div {
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .tf-task-list,
+  .tf-task-list > header,
+  .tf-task-list > div {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tf-task-list {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tf-task-header {
+    width: 100%;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .tf-task-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tf-task-header > div:nth-child(2) {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .tf-task-header > div:nth-child(3) {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .tf-task-header .tf-task-mode-label {
+    display: none;
+  }
+
+  .tf-task-header .tf-ai-label {
+    display: none;
+  }
+
+  .tf-task-header .tf-ai-button {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .tf-task-header .tf-display-modes {
+    max-width: 100%;
+  }
+
+  .tf-task-header .tf-display-modes button {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .tf-task-header {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .tf-task-header h1 {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tf-task-header .tf-display-modes {
+    display: flex;
+    flex: 0 0 auto;
+  }
+}
+
+/* ===== Mobile-first product UX ===== */
+@media (max-width: 767px) {
+  /* The app owns the full phone viewport. Secondary navigation is overlay-only. */
+  .app-shell,
+  .app-shell > main,
+  .tf-task-list {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  .mobile-app-header {
+    background: hsl(var(--background) / 0.94);
+    border-color: hsl(var(--border) / 0.8);
+  }
+
+  /* One compact app bar instead of a desktop toolbar squeezed into a phone. */
+  .tf-task-header {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    padding: 0.7rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .tf-task-header > div:first-child {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .tf-task-header > div:first-child h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tf-task-header > div:nth-child(2),
+  .tf-task-header > div:nth-child(3) {
+    width: auto !important;
+    flex: 0 0 auto !important;
+  }
+
+  .tf-task-header > div:last-child {
+    width: auto !important;
+    gap: 0.25rem !important;
+  }
+
+  .tf-ai-button {
+    width: 40px;
+    height: 40px;
+    min-height: 40px !important;
+    padding: 0 !important;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
+  .tf-ai-label { display: none !important; }
+
+  .tf-display-modes {
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .tf-display-modes button {
+    width: 40px;
+    min-width: 40px !important;
+    height: 38px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+
+  .tf-display-modes .tf-task-mode-label { display: none !important; }
+
+  /* Secondary view headers: title first, actions only when needed. */
+  .tf-view-header {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    padding: 0.7rem 0.75rem !important;
+    min-height: 52px;
+    gap: 0.5rem !important;
+  }
+
+  .tf-view-header > div:first-child,
+  .tf-view-header > section:first-child {
+    min-width: 0 !important;
+    flex: 1 1 auto;
+  }
+
+  .tf-view-header h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tf-view-header p {
+    display: none !important;
+  }
+
+  .tf-view-header > :last-child {
+    margin-left: auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  .tf-view-header button,
+  .tf-view-header label {
+    min-height: 40px;
+  }
+
+  /* Action text is secondary on a phone; the icon remains visible. */
+  .tf-view-header button > span,
+  .tf-view-header label > span {
+    display: none;
+  }
+
+  /* Graph is intentionally calm: the canvas is the primary UI. */
+  .graph-toolbar {
+    min-height: 52px;
+    flex-wrap: nowrap !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+  .graph-toolbar .graph-search,
+  .graph-toolbar .graph-legend,
+  .graph-toolbar .graph-zoom-controls {
+    display: none !important;
+  }
+  .graph-mobile-search-toggle,
+  .graph-mobile-settings {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+  }
+  .graph-mobile-search-panel,
+  .graph-mobile-controls {
+    display: block !important;
+  }
+  .graph-info,
+  .graph-date-chips,
+  .graph-empty-hint {
+    display: none !important;
+  }
+  .graph-selected-day {
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    top: auto !important;
+    bottom: 0.75rem !important;
+    width: auto !important;
+    max-height: min(55dvh, 420px);
+    overflow: hidden;
+    padding: 0.9rem !important;
+    border-radius: 18px;
+  }
+  .graph-selected-day > div:last-child {
+    max-height: 32dvh;
+  }
+
+  /* Keep task rows thumb-friendly without adding visual noise. */
+  .tf-task-list > div.flex-1 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .tf-task-list .group {
+    min-height: 48px;
+  }
+
+  /* Horizontal views scroll inside themselves, never the whole application. */
+  .tf-task-list > [class*="overflow-x-auto"],
+  .tf-task-list .overflow-x-auto {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Forms become bottom-sheet-like cards instead of desktop-sized blocks. */
+  [role='dialog'] {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .tf-task-header > div:first-child h1,
+  .tf-view-header h1 {
+    font-size: 0.98rem;
+    line-height: 1.2rem;
+  }
+
+  .tf-task-header > div:first-child p {
+    font-size: 0.68rem;
+  }
+}
+
+/* ===== Mobile-first product UX ===== */
+@media (max-width: 767px) {
+  .app-shell,
+  .app-shell > main,
+  .tf-task-list { width: 100vw !important; max-width: 100vw !important; }
+
+  .mobile-app-header { background: hsl(var(--background) / 0.94); border-color: hsl(var(--border) / 0.8); }
+
+  /* Phone toolbar: title + compact actions, details open on demand. */
+  .tf-task-header {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    padding: 0.7rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+  .tf-task-header > div:first-child { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; }
+  .tf-task-header > div:first-child h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tf-task-header > div:nth-child(2), .tf-task-header > div:nth-child(3), .tf-task-header > div:last-child { width: auto !important; flex: 0 0 auto !important; }
+  .tf-task-header > div:last-child { gap: 0.25rem !important; }
+  .tf-ai-button { width: 40px; height: 40px; min-height: 40px !important; padding: 0 !important; justify-content: center; border-radius: 12px; }
+  .tf-ai-label { display: none !important; }
+  .tf-display-modes { height: 40px; border-radius: 12px; }
+  .tf-display-modes button { width: 40px; min-width: 40px !important; height: 38px; padding: 0 !important; justify-content: center; }
+  .tf-display-modes .tf-task-mode-label { display: none !important; }
+
+  .tf-view-header { flex-wrap: nowrap !important; align-items: center !important; padding: 0.7rem 0.75rem !important; min-height: 52px; gap: 0.5rem !important; }
+  .tf-view-header > div:first-child, .tf-view-header > section:first-child { min-width: 0 !important; flex: 1 1 auto; }
+  .tf-view-header h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tf-view-header p { display: none !important; }
+  .tf-view-header > :last-child { margin-left: auto !important; width: auto !important; max-width: none !important; }
+  .tf-view-header button, .tf-view-header label { min-height: 40px; }
+  .tf-view-header button > span, .tf-view-header label > span { display: none; }
+
+  /* Graph: canvas is the primary UI. Legend, hints and date pills stay hidden. */
+  .graph-toolbar { min-height: 52px; flex-wrap: nowrap !important; padding: 0.5rem 0.75rem !important; }
+  .graph-toolbar .graph-search, .graph-toolbar .graph-legend, .graph-toolbar .graph-zoom-controls { display: none !important; }
+  .graph-mobile-search-toggle, .graph-mobile-settings { display: inline-flex !important; align-items: center; justify-content: center; width: 40px; height: 40px; }
+  .graph-mobile-search-panel, .graph-mobile-controls { display: block !important; }
+  .graph-info, .graph-date-chips, .graph-empty-hint { display: none !important; }
+  .graph-selected-day { left: 0.75rem !important; right: 0.75rem !important; top: auto !important; bottom: 0.75rem !important; width: auto !important; max-height: min(55dvh, 420px); overflow: hidden; padding: 0.9rem !important; border-radius: 18px; }
+  .graph-selected-day > div:last-child { max-height: 32dvh; }
+
+  .tf-task-list > div.flex-1 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .tf-task-list .group { min-height: 48px; }
+  .tf-task-list .overflow-x-auto { max-width: 100%; overscroll-behavior-x: contain; }
+
+  [role='dialog'] { width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; max-height: calc(100dvh - 1rem); overflow-y: auto; }
+}
+
+@media (max-width: 420px) {
+  .tf-task-header > div:first-child h1, .tf-view-header h1 { font-size: 0.98rem; line-height: 1.2rem; }
+  .tf-task-header > div:first-child p { font-size: 0.68rem; }
+}

@@ -56,7 +56,7 @@ export function FocusView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <header className="px-6 py-4 border-b">
+      <header className="tf-view-header px-6 py-4 border-b">
         <h1 className="text-xl font-semibold">Фокус</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Pomodoro-таймер и статистика концентрации
