@@ -33,7 +33,7 @@ function priorityColor(priority: string, isSubtask = false) {
   if (priority === 'HIGH') return '#ef4444';
   if (priority === 'MEDIUM') return '#f59e0b';
   if (priority === 'LOW') return '#3b82f6';
-  return '#64748b';
+  return '#22a06b';
 }
 
 function taskDateKeys(

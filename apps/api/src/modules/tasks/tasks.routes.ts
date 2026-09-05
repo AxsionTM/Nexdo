@@ -63,10 +63,24 @@ router.get('/', async (req: AuthRequest, res, next) => {
       });
       // Inbox shows root tasks only. Their children are returned by the nested
       // `children` relation below, so subtasks never appear as duplicate top-level rows.
+      // Unlike the dedicated Overdue view, Inbox is an active capture list:
+      // tasks whose deadline is already on a previous calendar day are hidden.
+      // A task due later today (or on a future day) remains visible.
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
       where.parentId = null;
       where.OR = [
         { projectId: null },
         ...(inbox ? [{ projectId: inbox.id }] : []),
+      ];
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { dueDate: null },
+            { dueDate: { gte: todayStart } },
+          ],
+        },
       ];
     } else if (projectId) {
       where.projectId = projectId;
@@ -392,13 +406,27 @@ router.get('/:id', async (req: AuthRequest, res, next) => {
           orderBy: { sortOrder: 'asc' },
           include: {
             tags: { include: { tag: true } },
-            checklist: true,
+            checklist: { orderBy: { sortOrder: 'asc' } },
+            children: {
+              where: { isDeleted: false },
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                tags: { include: { tag: true } },
+                checklist: { orderBy: { sortOrder: 'asc' } },
+                children: {
+                  where: { isDeleted: false },
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
+            },
           },
         },
         attachments: true,
         reminders: true,
         project: { select: { id: true, name: true, color: true } },
         section: true,
+        parent: { select: { id: true, title: true, status: true } },
+        comments: { orderBy: { createdAt: 'asc' }, take: 20 },
       },
     });
 

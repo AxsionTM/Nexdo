@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Flag, Calendar, Tag, Folder, AlignLeft } from 'lucide-react';
+import { X, Flag, Calendar, Tag, Folder, AlignLeft, Clock3, AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTasksStore } from '@/stores/tasks';
@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import { cn, priorityLabels } from '@/lib/utils';
 
 const PRIORITIES = [
-  { value: 'NONE', label: 'Нет', color: 'text-gray-400', bg: 'bg-gray-400' },
+  { value: 'NONE', label: 'Нет', color: 'text-emerald-500', bg: 'bg-emerald-600' },
   { value: 'LOW', label: 'Низкий', color: 'text-blue-500', bg: 'bg-blue-500' },
   { value: 'MEDIUM', label: 'Средний', color: 'text-amber-500', bg: 'bg-amber-500' },
   { value: 'HIGH', label: 'Высокий', color: 'text-red-500', bg: 'bg-red-500' },
@@ -48,6 +48,8 @@ export function CreateTaskModal({ open, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [timeConflict, setTimeConflict] = useState('');
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [pendingData, setPendingData] = useState<any | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +73,8 @@ export function CreateTaskModal({ open, onClose }: Props) {
     setRemindMinutes('');
     setError('');
     setTimeConflict('');
+    setConflicts([]);
+    setPendingData(null);
   };
 
   const handleClose = () => {
@@ -95,6 +99,12 @@ export function CreateTaskModal({ open, onClose }: Props) {
     } catch {}
   };
 
+  const performCreate = async (data: any) => {
+    await createTask(data);
+    await refreshCurrentView();
+    handleClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || submitting) return;
@@ -103,7 +113,6 @@ export function CreateTaskModal({ open, onClose }: Props) {
     try {
       const startIso = toIso(startDate, startTime);
       const dueIso = toIso(dueDate, dueTime || (dueDate && startTime ? startTime : ''));
-
       const data: any = {
         title: title.trim(),
         description: description.trim() || undefined,
@@ -116,36 +125,49 @@ export function CreateTaskModal({ open, onClose }: Props) {
       if (dueIso) data.dueDate = dueIso;
       if (recurrenceType && recurrenceType !== 'NONE') data.recurrenceType = recurrenceType;
       if (dueIso && remindMinutes !== '') data.remindMinutes = Number(remindMinutes);
-      // If only start given, also set due to same day end feel optional - leave as is
 
-      // Overlapping timed tasks are allowed, but the user should be warned.
       if (startIso && dueIso) {
         try {
           const { tasks: existing } = await api.getTasks({ includeCompleted: 'false' });
-          const start = new Date(startIso).getTime();
-          const due = new Date(dueIso).getTime();
-          const conflicts = existing.filter((t: any) => {
+          const startMs = new Date(startIso).getTime();
+          const dueMs = new Date(dueIso).getTime();
+          const found = existing.filter((t: any) => {
             if (!t.startDate || !t.dueDate || t.status === 'COMPLETED' || t.parentId) return false;
-            const a = new Date(t.startDate).getTime(), b = new Date(t.dueDate).getTime();
-            return a < due && b > start;
+            return new Date(t.startDate).getTime() < dueMs && new Date(t.dueDate).getTime() > startMs;
           });
-          if (conflicts.length) {
-            const names = conflicts.slice(0, 2).map((t: any) => `«${t.title}»`).join(', ');
-            const message = `На это время уже есть ${conflicts.length === 1 ? 'задача' : 'задачи'}: ${names}. Пересечение разрешено.`;
-            window.alert(`⚠️ Пересечение времени\n\n${message}`);
-            // Intentionally continue: two simultaneous tasks can be legitimate.
+          if (found.length) {
+            setConflicts(found);
+            setPendingData(data);
+            setTimeConflict('');
+            return;
           }
-        } catch {}
+        } catch {
+          // Conflict checking is advisory. Creation must still work if the list cannot be loaded.
+        }
       }
-
-      await createTask(data);
-      await refreshCurrentView();
-      handleClose();
+      await performCreate(data);
     } catch (err: any) {
       setError(err.message || 'Не удалось создать задачу');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const confirmCreateDespiteConflict = async () => {
+    if (!pendingData || submitting) return;
+    setSubmitting(true);
+    try {
+      await performCreate(pendingData);
+    } catch (err: any) {
+      setError(err.message || 'Не удалось создать задачу');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const cancelConflict = () => {
+    setConflicts([]);
+    setPendingData(null);
   };
 
   if (!open) return null;
@@ -158,6 +180,36 @@ export function CreateTaskModal({ open, onClose }: Props) {
         className="relative w-full max-w-md rounded-2xl border bg-card shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {conflicts.length > 0 && (
+          <div className="absolute inset-x-0 top-0 z-20 flex max-h-[80vh] flex-col rounded-2xl border bg-card shadow-2xl">
+            <div className="flex items-start gap-3 border-b px-5 py-4">
+              <div className="mt-0.5 rounded-full bg-amber-500/10 p-2 text-amber-500"><AlertTriangle className="h-5 w-5" /></div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold">Пересечение времени</h3>
+                <p className="mt-1 text-xs text-muted-foreground">На выбранный период уже запланированы задачи. Создание не блокируется.</p>
+              </div>
+              <button type="button" onClick={cancelConflict} className="rounded-lg p-1.5 hover:bg-accent"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[46vh] overflow-y-auto p-4 space-y-2">
+              {conflicts.map((conflict: any) => (
+                <div key={conflict.id} className="rounded-xl border bg-muted/20 p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{conflict.title}</p>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="h-3 w-3" />{new Date(conflict.startDate).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })} — {new Date(conflict.dueDate).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</div>
+                      {conflict.description && <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">{conflict.description}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t bg-muted/10 px-4 py-3">
+              <Button type="button" variant="ghost" size="sm" onClick={cancelConflict}>Отменить</Button>
+              <Button type="button" size="sm" onClick={confirmCreateDespiteConflict} disabled={submitting}><Check className="mr-1.5 h-4 w-4" />Подтвердить время</Button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between px-5 py-3.5 border-b">
           <h2 className="text-sm font-semibold">Новая задача</h2>
           <button type="button" onClick={handleClose} className="p-1 rounded-lg hover:bg-accent">

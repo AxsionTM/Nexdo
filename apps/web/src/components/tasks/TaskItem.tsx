@@ -55,7 +55,7 @@ export function TaskItem({ task, depth = 0 }: { task: any; depth?: number }) {
             completeTask(task.id);
           }}
         >
-          <Checkbox checked={task.status === 'COMPLETED'} priority={task.priority} />
+          <Checkbox checked={task.status === 'COMPLETED'} priority={depth > 0 ? 'NONE' : task.priority} className={depth > 0 ? 'border-violet-400 data-[checked]:bg-violet-500' : undefined} />
         </div>
 
         <div className="flex-1 min-w-0">

@@ -15,6 +15,9 @@ import {
   ListTree,
   Archive,
   Repeat,
+  Clock3,
+  FolderKanban,
+  ListChecks,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTasksStore } from '@/stores/tasks';
@@ -25,7 +28,7 @@ import { Input } from '@/components/ui/input';
 import { cn, formatDate, priorityLabels } from '@/lib/utils';
 
 const PRIORITIES = [
-  { value: 'NONE', label: 'Нет', color: 'bg-gray-400' },
+  { value: 'NONE', label: 'Нет', color: 'bg-emerald-600' },
   { value: 'LOW', label: 'Низкий', color: 'bg-blue-500' },
   { value: 'MEDIUM', label: 'Средний', color: 'bg-amber-500' },
   { value: 'HIGH', label: 'Высокий', color: 'bg-red-500' },
@@ -58,6 +61,16 @@ export function TaskDetail() {
   const [showTagInput, setShowTagInput] = useState(false);
   const [saving, setSaving] = useState(false);
   const isSubtask = Boolean(task?.parentId);
+  const childCount = task?.children?.length || 0;
+  const completedChildCount = task?.children?.filter((child: any) => child.status === 'COMPLETED').length || 0;
+  const formatDateTime = (value?: string | null, allDay = false) => {
+    if (!value) return 'Не задано';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'Не задано';
+    return allDay
+      ? d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
 
   const loadTask = useCallback(async () => {
     if (!selectedTaskId) {
@@ -377,6 +390,44 @@ const handleDueDateChange = (value: string) => {
             />
           </div>
 
+          {/* Compact task summary: important information stays visible even when the panel is scrolled. */}
+          <div className="mx-4 mb-3 rounded-xl border bg-background/60 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Полная информация</span>
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", task.status === 'COMPLETED' ? 'bg-emerald-500/15 text-emerald-400' : task.status === 'IN_PROGRESS' ? 'bg-blue-500/15 text-blue-400' : 'bg-muted text-muted-foreground')}>
+                {task.status === 'COMPLETED' ? 'Выполнена' : task.status === 'IN_PROGRESS' ? 'В работе' : task.status === 'CANCELLED' ? 'Отменена' : 'К выполнению'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg bg-accent/40 px-2.5 py-2">
+                <div className="flex items-center gap-1.5 text-muted-foreground"><Clock3 className="h-3.5 w-3.5" />Начало</div>
+                <div className="mt-1 font-medium">{formatDateTime(task.startDate, task.isAllDay)}</div>
+              </div>
+              <div className="rounded-lg bg-accent/40 px-2.5 py-2">
+                <div className="flex items-center gap-1.5 text-muted-foreground"><Clock3 className="h-3.5 w-3.5" />Окончание</div>
+                <div className="mt-1 font-medium">{formatDateTime(task.dueDate, task.isAllDay)}</div>
+              </div>
+              <div className="rounded-lg bg-accent/40 px-2.5 py-2">
+                <div className="flex items-center gap-1.5 text-muted-foreground"><FolderKanban className="h-3.5 w-3.5" />Проект</div>
+                <div className="mt-1 truncate font-medium">{task.project?.name || 'Без проекта'}</div>
+              </div>
+              <div className="rounded-lg bg-accent/40 px-2.5 py-2">
+                <div className="flex items-center gap-1.5 text-muted-foreground"><ListChecks className="h-3.5 w-3.5" />Подзадачи</div>
+                <div className="mt-1 font-medium">{completedChildCount}/{childCount}</div>
+              </div>
+            </div>
+            {task.parent && (
+              <button
+                type="button"
+                onClick={() => setSelectedTask(task.parent.id)}
+                className="mt-2 w-full rounded-lg border px-2.5 py-2 text-left text-xs hover:bg-accent"
+              >
+                <span className="text-muted-foreground">Родительская задача</span>
+                <span className="mt-0.5 block truncate font-medium">{task.parent.title}</span>
+              </button>
+            )}
+          </div>
+
           {!isSubtask && (
             <>
           {/* Description */}
@@ -634,21 +685,36 @@ const handleDueDateChange = (value: string) => {
               {task.children?.map((child: any) => (
                 <div
                   key={child.id}
-                  className="flex items-center gap-2 py-1 cursor-pointer hover:bg-accent/50 rounded px-1"
+                  className="group flex items-center gap-2 py-1.5 cursor-pointer hover:bg-accent/50 rounded px-1.5"
                   onClick={() => setSelectedTask(child.id)}
                 >
-                  <Checkbox
-                    checked={child.status === 'COMPLETED'}
-                    priority={child.priority}
-                  />
-                  <span
-                    className={cn(
-                      'text-sm flex-1',
-                      child.status === 'COMPLETED' && 'line-through text-muted-foreground'
-                    )}
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-full"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await completeTask(child.id);
+                      await loadTask();
+                    }}
+                    title={child.status === 'COMPLETED' ? 'Вернуть в работу' : 'Отметить выполненной'}
                   >
+                    <Checkbox checked={child.status === 'COMPLETED'} priority="NONE" className="border-violet-400 data-[checked]:bg-violet-500" />
+                  </button>
+                  <span className={cn('text-sm flex-1 min-w-0 truncate', child.status === 'COMPLETED' && 'line-through text-muted-foreground')}>
                     {child.title}
                   </span>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-opacity"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await deleteTask(child.id);
+                      await loadTask();
+                    }}
+                    title="Удалить подзадачу"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               ))}
             </div>

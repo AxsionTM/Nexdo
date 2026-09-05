@@ -24,6 +24,7 @@ interface Task {
   isAllDay?: boolean;
 
   completedAt?: string | null;
+  isDeleted?: boolean;
 
   _count?: { children: number };
 }

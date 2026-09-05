@@ -9,14 +9,11 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isSameDay,
   isToday,
   addMonths,
   subMonths,
   addWeeks,
   subWeeks,
-  addDays,
-  subDays,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -27,7 +24,7 @@ import { useEffectsStore } from '@/stores/effects';
 import { cn, priorityColors } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-type CalMode = 'month' | 'week' | 'day';
+type CalMode = 'month' | 'week';
 
 export function CalendarView() {
   const { tasks, setSelectedTask, updateTask } = useTasksStore();
@@ -89,8 +86,6 @@ export function CalendarView() {
       setCursor(dir === 1 ? addMonths(cursor, 1) : subMonths(cursor, 1));
     } else if (mode === 'week') {
       setCursor(dir === 1 ? addWeeks(cursor, 1) : subWeeks(cursor, 1));
-    } else {
-      setCursor(dir === 1 ? addDays(cursor, 1) : subDays(cursor, 1));
     }
   };
 
@@ -109,9 +104,7 @@ export function CalendarView() {
   const headerLabel =
     mode === 'month'
       ? format(cursor, 'LLLL yyyy', { locale: ru })
-      : mode === 'week'
-      ? `${format(weekDays[0], 'd MMM', { locale: ru })} – ${format(weekDays[6], 'd MMM yyyy', { locale: ru })}`
-      : format(cursor, 'd MMMM yyyy, EEEE', { locale: ru });
+      : `${format(weekDays[0], 'd MMM', { locale: ru })} – ${format(weekDays[6], 'd MMM yyyy', { locale: ru })}`;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -138,7 +131,7 @@ export function CalendarView() {
         </div>
 
         <div className="flex rounded-lg border overflow-hidden">
-          {(['month', 'week', 'day'] as CalMode[]).map((m) => (
+          {(['month', 'week'] as CalMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -147,7 +140,7 @@ export function CalendarView() {
                 mode === m ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
               )}
             >
-              {m === 'month' ? 'Месяц' : m === 'week' ? 'Неделя' : 'День'}
+              {m === 'month' ? 'Месяц' : 'Неделя'}
             </button>
           ))}
         </div>
@@ -328,43 +321,6 @@ export function CalendarView() {
         </div>
       )}
 
-      {/* Day view */}
-      {mode === 'day' && (
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="max-w-lg mx-auto space-y-2">
-            {(tasksByDate.get(format(cursor, 'yyyy-MM-dd')) || []).map((task) => (
-              <button
-                key={task.id}
-                onClick={() => setSelectedTask(task.id)}
-                className={cn(
-                  'w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg border bg-card hover:bg-accent transition-colors',
-                  task.status === 'COMPLETED' && 'opacity-60'
-                )}
-              >
-                <span
-                  className={cn(
-                    'h-2.5 w-2.5 rounded-full shrink-0',
-                    priorityColors[task.priority] || 'bg-gray-400'
-                  )}
-                />
-                <span
-                  className={cn(
-                    'text-sm',
-                    task.status === 'COMPLETED' && 'line-through text-muted-foreground'
-                  )}
-                >
-                  {task.title}
-                </span>
-              </button>
-            ))}
-            {(tasksByDate.get(format(cursor, 'yyyy-MM-dd')) || []).length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-12">
-                Нет задач на этот день
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

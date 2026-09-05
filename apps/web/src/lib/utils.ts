@@ -29,7 +29,7 @@ export const priorityLabels: Record<string, string> = {
 };
 
 export const priorityColors: Record<string, string> = {
-  NONE: 'bg-gray-400',
+  NONE: 'bg-emerald-600',
   LOW: 'bg-blue-500',
   MEDIUM: 'bg-amber-500',
   HIGH: 'bg-red-500',

@@ -16,7 +16,7 @@ export function Checkbox({ checked, onCheckedChange, className, priority }: Chec
     HIGH: 'border-red-500 data-[checked]:bg-red-500',
     MEDIUM: 'border-amber-500 data-[checked]:bg-amber-500',
     LOW: 'border-blue-500 data-[checked]:bg-blue-500',
-    NONE: 'border-gray-400 data-[checked]:bg-gray-400',
+    NONE: 'border-emerald-600 data-[checked]:bg-emerald-600',
   };
 
   return (
